@@ -14,6 +14,9 @@ from translate.storage import factory
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
+from pootle.core.mixins.treeitem import CachedMethods
+from pootle_store.util import UNTRANSLATED, FUZZY, TRANSLATED
+
 
 User = get_user_model()
 
@@ -29,6 +32,7 @@ def _update_translation(store, item, new_values, sync=True):
 
     if 'translator_comment' in new_values:
         unit.translator_comment = new_values['translator_comment']
+        unit._comment_updated = True
 
     unit.submitted_on = timezone.now()
     unit.submitted_by = User.objects.get_system_user()
@@ -202,3 +206,64 @@ def test_add_suggestion(af_tutorial_po, system):
     assert sugg is not None
     assert added
     assert len(untranslated_unit.get_suggestions()) == 1
+
+
+@pytest.mark.django_db
+def test_accept_suggestion_changes_state(issue_2401_po, system):
+    """Tests that accepting a suggestion will change the state of the unit."""
+    tp = issue_2401_po.translation_project
+
+    # First test with an untranslated unit
+    unit = issue_2401_po.getitem(0)
+    assert unit.state == UNTRANSLATED
+
+    suggestion, created = unit.add_suggestion('foo')
+    assert unit.state == UNTRANSLATED
+
+    unit.accept_suggestion(suggestion, tp, system)
+    assert unit.state == TRANSLATED
+
+    # Let's try with a translated unit now
+    unit = issue_2401_po.getitem(1)
+    assert unit.state == TRANSLATED
+
+    suggestion, created = unit.add_suggestion('bar')
+    assert unit.state == TRANSLATED
+
+    unit.accept_suggestion(suggestion, tp, system)
+    assert unit.state == TRANSLATED
+
+    # And finally a fuzzy unit
+    unit = issue_2401_po.getitem(2)
+    assert unit.state == FUZZY
+
+    suggestion, created = unit.add_suggestion('baz')
+    assert unit.state == FUZZY
+
+    unit.accept_suggestion(suggestion, tp, system)
+    assert unit.state == TRANSLATED
+
+@pytest.mark.django_db
+def test_accept_suggestion_update_wordcount(it_tutorial_po, system):
+    """Tests that accepting a suggestion for an untranslated unit will
+    change the wordcount stats of the unit's store.
+    """
+
+    # Parse store
+    it_tutorial_po.update(overwrite=False, only_newer=False)
+
+    untranslated_unit = it_tutorial_po.getitem(0)
+    suggestion_text = 'foo bar baz'
+
+    sugg, added = untranslated_unit.add_suggestion(suggestion_text)
+    assert sugg is not None
+    assert added
+    assert len(untranslated_unit.get_suggestions()) == 1
+    assert it_tutorial_po.get_cached(CachedMethods.SUGGESTIONS) == 1
+    assert it_tutorial_po.get_cached(CachedMethods.WORDCOUNT_STATS)['translated'] == 1
+    assert untranslated_unit.state == UNTRANSLATED
+    untranslated_unit.accept_suggestion(sugg,
+                                        it_tutorial_po.translation_project,
+                                        system)
+    assert untranslated_unit.state == TRANSLATED
+    assert it_tutorial_po.get_cached(CachedMethods.WORDCOUNT_STATS)['translated'] == 2

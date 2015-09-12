@@ -3,7 +3,7 @@
 {% get_current_language_bidi as LANGUAGE_BIDI %}
 {% cache settings.POOTLE_CACHE_TIMEOUT unit_edit unit.id unit.mtime cantranslate cansuggest canreview altsrcs profile.id LANGUAGE_CODE unit.get_terminology %}
 <td colspan="2" rowspan="1" class="translate-full translate-focus{% if unit.isfuzzy %} fuzzy-unit{% endif %}" dir="{% locale_dir %}">
-  <div class="translate-container{% if unit.get_active_qualitychecks.count %} error{% endif %}">
+  <div class="translate-container{% if unit.get_active_critical_qualitychecks.exists %} error{% endif %}">
     <div class="unit-path">
       <ul>
         <li><span class="content-wrapper">{{ language.name }}</span></li>
@@ -60,7 +60,9 @@
       <div class="comments sidebar">
         <div lang="{{ source_language.code }}" dir="{{ source_language.direction }}">
           <span class="sidetitle" lang="{{ LANGUAGE_CODE }}">{% trans "Comments:" %}</span>
-          <div class="developer-comments">{{ unit.developer_comment|urlize|url_target_blank|url_trim|linebreaks }}</div>
+          <div class="js-developer-comments developer-comments">
+            {{ unit.developer_comment|urlize|url_target_blank|url_trim|linebreaks }}
+          </div>
         </div>
         {% with image_urls=unit.developer_comment|image_urls %}
           {% if image_urls %}
@@ -105,12 +107,14 @@
                 {% if cansuggest or cantranslate %}
                 <div class="translate-toolbar">
                   <span class="js-toolbar-buttons">
-                    <a class="icon-copy js-copyoriginal" title="{% trans 'Copy into translation' %}" accesskey="c"></a>
+                    <a class="icon-copy js-copyoriginal" data-uid="{{ altunit.id }}"
+                       title="{% trans 'Copy into translation' %}" accesskey="c"></a>
                   </span>
                 </div>
                 {% endif %}
               </div>
-              <div id="unit-{{ altunit.id }}" class="translate-original{% if unit.hasplural %} translate-plural{% endif %}">
+              <div id="js-unit-{{ altunit.id }}"
+                   class="translate-original{% if unit.hasplural %} translate-plural{% endif %}">
                 {% for i, target, title in altunit|pluralize_target %}
                 <div class="translation-text" lang="{{ altunit.store.translation_project.language.code }}" dir="{{ altunit.store.translation_project.language.direction }}"{% if title %} title="{{ title }}"{% endif %}>{{ target|fancy_highlight }}</div>
                 {% endfor %}
@@ -131,12 +135,14 @@
                     </a>
                   </span>
                   <span class="js-toolbar-buttons">
-                    <a class="icon-copy js-copyoriginal" title="{% trans 'Copy into translation' %}" accesskey="c"></a>
+                    <a class="icon-copy js-copyoriginal" data-uid="{{ unit.id }}"
+                       title="{% trans 'Copy into translation' %}" accesskey="c"></a>
                   </span>
                 </div>
                 {% endif %}
               </div>
-              <div class="translate-original{% if unit.hasplural %} translate-plural{% endif %}">
+              <div id="js-unit-{{ unit.id }}"
+                   class="translate-original{% if unit.hasplural %} translate-plural{% endif %}">
                 {% for i, source, title in unit|pluralize_source %}
                 <div class="translation-text" lang="{{ source_language.code }}" dir="{{ source_language.direction }}"{% if title %} title="{{ title }}"{% endif %}>{{ source|fancy_highlight }}</div>
                 {% endfor %}
@@ -277,7 +283,8 @@
           {% for sugg in suggestions %}
           <div id="suggestion-{{ sugg.id }}"
             class="js-user-suggestion js-editor-copytext extra-item-block"
-            data-action="overwrite" data-translation-aid="{{ sugg.target }}">
+            data-action="overwrite" data-translation-aid="{{ sugg.target }}"
+            data-suggestor-id="{{ sugg.user.id }}">
             {% for i, target, diff, title in sugg|pluralize_diff_sugg %}
             <div class="extra-item-content">
               {% if sugg.user %}

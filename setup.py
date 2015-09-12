@@ -153,7 +153,8 @@ class BuildChecksTemplatesCommand(Command):
         import django
         import codecs
         from pootle.apps.pootle_misc.checks import check_names, excluded_filters
-        from translate.filters.checks import TeeChecker
+        from translate.filters.checks import (TeeChecker,
+                                              StandardChecker, StandardUnitChecker)
         try:
             from docutils.core import publish_parts
         except ImportError:
@@ -170,7 +171,8 @@ class BuildChecksTemplatesCommand(Command):
             to get the HTML snippet.
             """
             # Provide a header with an anchor to refer to.
-            description = '\n<h3 id="%s">%s</h3>\n\n' % (name, check_names[name])
+            description = ('\n<h3 id="%s">%s</h3>\n\n' %
+                           (name, unicode(check_names[name])))
 
             # Clean the leading whitespace on each docstring line so it gets
             # properly rendered.
@@ -184,7 +186,9 @@ class BuildChecksTemplatesCommand(Command):
 
         # Get a checker with the Translate Toolkit checks. Note that filters
         # that are not used in Pootle are excluded.
-        fd = TeeChecker().getfilters(excludefilters=excluded_filters)
+        fd = TeeChecker(
+            checkerclasses=[StandardChecker, StandardUnitChecker]
+        ).getfilters(excludefilters=excluded_filters)
 
         docs = sorted(
             get_check_description(name, f) for name, f in fd.items()

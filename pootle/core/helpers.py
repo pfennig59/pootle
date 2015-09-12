@@ -12,12 +12,14 @@ from itertools import groupby
 from django.conf import settings
 from django.utils.translation import ugettext as _
 
+from pootle_app.models.directory import Directory
 from pootle_app.models.permissions import check_permission
 from pootle_misc.checks import check_names, get_qualitycheck_schema
 from pootle_misc.forms import make_search_form
 from pootle_misc.stats import get_translation_states
-from pootle_store.models import Store, Unit
+from pootle_store.models import Unit
 from pootle_store.views import get_step_query
+from pootle_translationproject.models import TranslationProject
 from virtualfolder.models import VirtualFolder
 
 from .url_helpers import get_path_parts, get_previous_url
@@ -68,12 +70,10 @@ def get_filter_name(GET):
     return (filter_name, extra)
 
 
-def get_translation_context(request, is_terminology=False):
+def get_translation_context(request):
     """Returns a common context for translation views.
 
     :param request: a :cls:`django.http.HttpRequest` object.
-    :param is_terminology: boolean indicating if the translation context
-        is relevant to a terminology project.
     """
     resource_path = getattr(request, 'resource_path', '')
     vfolder_pk = getattr(request, 'current_vfolder', '')
@@ -102,8 +102,7 @@ def get_translation_context(request, is_terminology=False):
 
         'check_categories': get_qualitycheck_schema(),
 
-        'search_form': make_search_form(request=request,
-                                        terminology=is_terminology),
+        'search_form': make_search_form(request=request),
 
         'previous_url': get_previous_url(request),
 
@@ -155,8 +154,10 @@ def get_browser_context(request):
 
     filters = {}
 
-    if (not isinstance(resource_obj, Store) and
-        VirtualFolder.get_matching_for(request.pootle_path).count()):
+    if ((isinstance(resource_obj, Directory) and
+         resource_obj.has_vfolders) or
+        (isinstance(resource_obj, TranslationProject) and
+         resource_obj.directory.has_vfolders)):
         filters['sort'] = 'priority'
 
     url_action_continue = resource_obj.get_translate_url(state='incomplete',

@@ -40,6 +40,12 @@ def arabic_tutorial_obsolete(arabic, tutorial):
 
 
 @pytest.fixture
+def english_tutorial(english, tutorial):
+    """Require English Tutorial."""
+    return _require_tp(english, tutorial)
+
+
+@pytest.fixture
 def french_tutorial(french, tutorial):
     """Require French Tutorial."""
     return _require_tp(french, tutorial)
@@ -47,5 +53,23 @@ def french_tutorial(french, tutorial):
 
 @pytest.fixture
 def spanish_tutorial(spanish, tutorial):
-    """Require French Tutorial."""
+    """Require Spanish Tutorial."""
     return _require_tp(spanish, tutorial)
+
+
+@pytest.fixture
+def italian_tutorial(italian, tutorial):
+    """Require Italian Tutorial."""
+    return _require_tp(italian, tutorial)
+
+
+@pytest.fixture
+def russian_tutorial(russian, tutorial):
+    """Require Russian Tutorial."""
+    return _require_tp(russian, tutorial)
+
+
+@pytest.fixture
+def afrikaans_vfolder_test(afrikaans, vfolder_test):
+    """Require Afrikaans Virtual Folder Test."""
+    return _require_tp(afrikaans, vfolder_test)

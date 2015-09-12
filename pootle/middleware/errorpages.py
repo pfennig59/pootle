@@ -30,6 +30,68 @@ from pootle.core.http import (JsonResponseBadRequest, JsonResponseForbidden,
                               JsonResponseNotFound, JsonResponseServerError)
 
 
+def log_exception(request, exception, tb):
+    if sentry_exception_handler is None:
+        # Send email to admins with details about exception
+        ip_type = (request.META.get('REMOTE_ADDR') in
+                   settings.INTERNAL_IPS and 'internal' or
+                   'EXTERNAL')
+        msg_args = {
+            'ip_type': ip_type,
+            'path': request.path,
+        }
+        subject = 'Error (%(ip_type)s IP): %(path)s' % msg_args
+
+        try:
+            request_repr = repr(request)
+        except:
+            request_repr = "Request repr() unavailable"
+
+        msg_args = (unicode(exception.args[0]), tb,
+                    request_repr)
+        message = "%s\n\n%s\n\n%s" % msg_args
+        mail_admins(subject, message, fail_silently=True)
+    else:
+        sentry_exception_handler(request=request)
+
+
+def handle_exception(request, exception, template_name):
+    # XXX: remove this? exceptions are already displayed in debug mode
+    tb = traceback.format_exc()
+    print >> sys.stderr, tb
+
+    if settings.DEBUG:
+        return None
+
+    try:
+        log_exception(request, exception, tb)
+
+        msg = force_unicode(exception)
+
+        if request.is_ajax():
+            return JsonResponseServerError({'msg': msg})
+
+        ctx = {
+            'exception': msg,
+        }
+        if hasattr(exception, 'filename'):
+            msg_args = {
+                'filename': exception.filename,
+                'errormsg': exception.strerror,
+            }
+            msg = _('Error accessing %(filename)s, Filesystem '
+                    'sent error: %(errormsg)s', msg_args)
+            ctx['fserror'] = msg
+
+        return HttpResponseServerError(
+            render_to_string(template_name, ctx,
+                             RequestContext(request))
+        )
+    except:
+        # Let's not confuse things by throwing an exception here
+        pass
+
+
 class ErrorPagesMiddleware(object):
     """Friendlier error pages."""
 
@@ -45,7 +107,7 @@ class ErrorPagesMiddleware(object):
             if request.is_ajax():
                 return JsonResponseForbidden({'msg': msg})
 
-            templatevars = {
+            ctx = {
                 'permission_error': msg,
             }
 
@@ -57,10 +119,10 @@ class ErrorPagesMiddleware(object):
                     'You need to <a class="js-login" href="%(login_link)s">login</a> '
                     'to access this page.', msg_args
                 )
-                templatevars["login_message"] = login_msg
+                ctx["login_message"] = login_msg
 
             return HttpResponseForbidden(
-                    render_to_string('errors/403.html', templatevars,
+                    render_to_string('errors/403.html', ctx,
                                      RequestContext(request))
                 )
         elif (exception.__class__.__name__ in
@@ -70,63 +132,6 @@ class ErrorPagesMiddleware(object):
             # check the class name instead. Since python uses duck typing
             # I will call this
             # poking-the-duck-until-it-quacks-like-a-duck-test
-
-            if request.is_ajax():
-                return JsonResponseServerError({'msg': msg})
-
-            return HttpResponseServerError(
-                    render_to_string('errors/db.html', {'exception': msg},
-                                     RequestContext(request))
-                )
-
+            return handle_exception(request, exception, 'errors/db.html')
         else:
-            #FIXME: implement better 500
-            tb = traceback.format_exc()
-            print >> sys.stderr, tb
-
-            if not settings.DEBUG:
-                try:
-                    templatevars = {
-                        'exception': msg,
-                    }
-                    if hasattr(exception, 'filename'):
-                        msg_args = {
-                            'filename': exception.filename,
-                            'errormsg': exception.strerror,
-                        }
-                        msg = _('Error accessing %(filename)s, Filesystem '
-                                'sent error: %(errormsg)s', msg_args)
-                        templatevars['fserror'] = msg
-
-                    if sentry_exception_handler is None:
-                        # Send email to admins with details about exception
-                        ip_type = (request.META.get('REMOTE_ADDR') in
-                                   settings.INTERNAL_IPS and 'internal' or
-                                   'EXTERNAL')
-                        msg_args = {
-                            'ip_type': ip_type,
-                            'path': request.path,
-                        }
-                        subject = 'Error (%(ip_type)s IP): %(path)s' % msg_args
-
-                        try:
-                            request_repr = repr(request)
-                        except:
-                            request_repr = "Request repr() unavailable"
-
-                        msg_args = (unicode(exception.args[0]), tb,
-                                    request_repr)
-                        message = "%s\n\n%s\n\n%s" % msg_args
-                        mail_admins(subject, message, fail_silently=True)
-                    else:
-                        sentry_exception_handler(request=request)
-
-                    if request.is_ajax():
-                        return JsonResponseServerError({'msg': msg})
-
-                    return HttpResponseServerError(
-                        render_to_string('errors/500.html', templatevars,
-                                         RequestContext(request)))
-                except:
-                    # Let's not confuse things by throwing an exception here
-                    pass
+            return handle_exception(request, exception, 'errors/500.html')

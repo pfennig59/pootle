@@ -6,20 +6,22 @@
  * AUTHORS file for copyright and authorship information.
  */
 
-'use strict';
+import $ from 'jquery';
+import React from 'react';
 
-var $ = require('jquery');
+import 'jquery-bidi';
+import 'jquery-utils';
+import assign from 'object-assign';
+import 'sorttable';
 
-require('jquery-bidi');
-require('jquery-easing');
-require('jquery-utils');
-require('sorttable');
-
-var helpers = require('./helpers.js');
+import LastUpdate from 'components/LastUpdate';
+import TimeSince from 'components/TimeSince';
+import UserEvent from 'components/UserEvent';
+import helpers from './helpers';
 
 
-var nicePercentage = function (part, total, noTotalDefault) {
-  var percentage = total ? part / total * 100 : noTotalDefault;
+const nicePercentage = function (part, total, noTotalDefault) {
+  const percentage = total ? part / total * 100 : noTotalDefault;
   if (99 < percentage && percentage < 100) {
     return 99;
   }
@@ -30,37 +32,67 @@ var nicePercentage = function (part, total, noTotalDefault) {
 };
 
 
-var onDataLoad = function () {
-  $('body').spin(false);
-};
-
-
 function cssId(id) {
-  return id.replace(/[\.@\+]/g, '-');
+  return id.replace(/[\.@\+\s]/g, '-');
 }
 
 
-var stats = {
+const stats = {
 
-  init: function (options) {
+  init(options) {
     this.retries = 0;
+
+    const isExpanded = (options.isInitiallyExpanded ||
+                        window.location.search.indexOf('?details') !== -1);
+    this.state = {
+      isExpanded: isExpanded,
+      checksData: null,
+      data: options.initialData,
+    };
+
     this.pootlePath = options.pootlePath;
     this.isAdmin = options.isAdmin;
-    this.processLoadedData(options.data, undefined, true);
+
+    this.$extraDetails = $('#js-path-summary-more');
+    this.$expandIcon = $('#js-expand-icon');
 
     $('td.stats-name').filter(':not([dir])').bidi();
 
-    $(document).on('click', '#js-path-summary', this.toggleChecks.bind(this));
-    $(document).on('click', '.js-stats-refresh', this.refreshStats.bind(this));
+    $(document).on('click', '#js-path-summary', (e) => {
+      e.preventDefault();
+      this.toggleChecks();
+    });
+    $(document).on('click', '.js-stats-refresh', (e) => {
+      e.preventDefault();
+      this.refreshStats();
+    });
+
+    window.addEventListener('popstate', (e) => {
+      const state = e.state;
+      if (state) {
+        this.setState({isExpanded: state.isExpanded});
+      }
+    });
+
+    // Retrieve async data if needed
+    if (isExpanded) {
+      this.loadChecks();
+    } else {
+      this.updateUI({});
+    }
   },
 
-  refreshStats: function (e) {
-    e.preventDefault();
+  setState(newState) {
+    this.state = assign({}, this.state, newState);
+    this.updateUI();
+  },
+
+  refreshStats() {
     this.dirtyBackoff = 1;
     this.updateDirty();
   },
 
-  updateProgressbar: function ($td, item) {
+  updateProgressbar($td, item) {
     var translated = nicePercentage(item.translated, item.total, 100),
         fuzzy = nicePercentage(item.fuzzy, item.total, 0),
         untranslated = 100 - translated - fuzzy,
@@ -82,7 +114,7 @@ var stats = {
     setTdWidth($td.find('td.untranslated'), untranslated);
   },
 
-  updateTranslationStats: function ($tr, total, value, noTotalDefault) {
+  updateTranslationStats($tr, total, value, noTotalDefault) {
     $tr.find('.stats-number a').html(value);
     $tr.find('.stats-percentage span').html(
       nicePercentage(value, total, noTotalDefault)
@@ -90,12 +122,12 @@ var stats = {
     $tr.find('.stats-percentage').show();
   },
 
-  updateAction: function ($action, count) {
+  updateAction($action, count) {
     $action.toggleClass('non-zero', !(count === 0));
     $action.find('.counter').text(count !== null ? count : '—');
   },
 
-  updateItemStats: function ($td, count) {
+  updateItemStats($td, count) {
     if (count) {
       $td.removeClass('zero');
       $td.removeClass('not-inited');
@@ -113,22 +145,65 @@ var stats = {
     }
   },
 
-  updateLastUpdates: function (stats) {
+  renderLastEvent(el, data) {
+    if (data.mtime === 0) {
+      return false;
+    }
+
+    const props = {
+      checkName: data.check_name,
+      checkDisplayName: data.check_display_name,
+      displayName: data.displayname,
+      email: data.email,
+      displayDatetime: data.display_datetime,
+      isoDatetime: data.iso_datetime,
+      type: data.type,
+      translationActionType: data.translation_action_type,
+      unitSource: data.unit_source,
+      unitUrl: data.unit_url,
+      username: data.username,
+    };
+    React.render(<UserEvent {...props} />, el);
+  },
+
+  renderLastUpdate(el, data) {
+    if (data.creation_time === 0) {
+      return false;
+    }
+
+    const props = {
+      displayDatetime: data.display_datetime,
+      isoDatetime: data.iso_datetime,
+      unitSource: data.unit_source,
+      unitUrl: data.unit_url,
+    };
+    React.render(<LastUpdate {...props} />, el);
+  },
+
+  renderLastUpdatedTime(el, data) {
+    if (data.creation_time === 0) {
+      return false;
+    }
+
+    const props = {
+      title: data.display_datetime,
+      dateTime: data.iso_datetime,
+    };
+    React.render(<TimeSince {...props} />, el);
+  },
+
+  updateLastUpdates(stats) {
     if (stats.lastupdated) {
-      $('#js-last-updated').toggle(stats.lastupdated.snippet !== '');
-      if (stats.lastupdated.snippet) {
-        $('#js-last-updated .last-updated').html(stats.lastupdated.snippet);
-      }
+      const lastUpdated = document.querySelector('#js-last-updated .last-updated');
+      this.renderLastUpdate(lastUpdated, stats.lastupdated);
     }
     if (stats.lastaction) {
-      $('#js-last-action').toggle(stats.lastaction.snippet !== '');
-      if (stats.lastaction.snippet) {
-        $('#js-last-action .last-action').html(stats.lastaction.snippet);
-      }
+      const lastAction = document.querySelector('#js-last-action .last-action');
+      this.renderLastEvent(lastAction, stats.lastaction);
     }
   },
 
-  processTableItem: function (item, code, $table, $td, now) {
+  processTableItem(item, code, $table, $td, now) {
     $td.parent().toggleClass('dirty', item.is_dirty);
     this.updateItemStats($td, item.total);
 
@@ -150,7 +225,7 @@ var stats = {
     if (item.lastaction) {
       $td = $table.find('#last-activity-' + code);
       $td.removeClass('not-inited');
-      $td.html(item.lastaction.snippet);
+      this.renderLastEvent($td[0], item.lastaction);
       $td.attr('sorttable_customkey', now - item.lastaction.mtime);
     }
 
@@ -160,12 +235,14 @@ var stats = {
     if (item.lastupdated) {
       $td = $table.find('#last-updated-' + code);
       $td.removeClass('not-inited');
-      $td.html(item.lastupdated.snippet);
+      this.renderLastUpdatedTime($td[0], item.lastupdated);
       $td.attr('sorttable_customkey', now - item.lastupdated.creation_time);
     }
   },
 
-  processLoadedData: function (data, callback, firstPageLoad) {
+  updateStatsUI() {
+    const { data } = this.state;
+
     var $table = $('#content table.stats'),
         $vfoldersTable = $('#content .vfolders table.stats'),
         dirtySelector = '#top-stats, #translate-actions, #autorefresh-notice',
@@ -176,7 +253,7 @@ var stats = {
       this.dirtyBackoff = Math.pow(2, this.retries);
       this.updateDirtyBackoffCounter();
       $('.js-stats-refresh').show();
-      this.dirtyBackoffId = setInterval(this.updateDirty.bind(this), 1000);
+      this.dirtyBackoffId = setInterval(() => this.updateDirty(), 1000);
     }
 
     this.updateProgressbar($('#progressbar'), data);
@@ -216,7 +293,7 @@ var stats = {
           $td = $vfoldersTable.find('#total-words-' + code);
 
           // Display only the virtual folders that must be displayed.
-          if (this.isAdmin || item.translated < item.total) {
+          if (this.isAdmin || item.isVisible) {
             this.processTableItem(item, code, $vfoldersTable, $td, now);
           } else {
             //FIXME vfolders might be added or removed since they can become
@@ -250,121 +327,121 @@ var stats = {
           }
         }, 1);
       }
-    } else {
-      // this is a single store stats, let's expand its details
-      // only on first page load, and unless it is already expanded
-      if (firstPageLoad && $('#js-path-summary-more').data('collapsed')) {
-        setTimeout(function () {
-          $('#js-path-summary').click();
-        }, 1);
-      }
-
     }
-    helpers.updateRelativeDates();
 
-    if (callback) {
-      callback(data);
-    }
   },
 
-  updateDirty: function () {
+  updateDirty() {
     if (--this.dirtyBackoff === 0) {
-      $('body').spin();
       $('.js-stats-refresh').hide();
       clearInterval(this.dirtyBackoffId);
-      setTimeout(function () {
+      setTimeout(() => {
         if (this.retries < 5) {
           this.retries++;
         }
-        this.load(onDataLoad);
-      }.bind(this), 250);
+        this.loadStats();
+      }, 250);
     }
     this.updateDirtyBackoffCounter();
   },
 
-  updateDirtyBackoffCounter: function () {
+  updateDirtyBackoffCounter() {
     var noticeStr = ngettext('%s second', '%s seconds', this.dirtyBackoff);
     noticeStr = interpolate(noticeStr, [this.dirtyBackoff], false);
     $('#autorefresh-notice strong').text(noticeStr);
   },
 
-  load: function (callback) {
-    var url = l('/xhr/stats/'),
-        reqData = {
-          path: this.pootlePath
-        };
+  load(url, data) {
+    $('body').spin();
+    return (
+      $.ajax({
+        url,
+        data,
+        dataType: 'json',
+      }).always(() => $('body').spin(false))
+    );
+  },
 
-    $.ajax({
-      url: url,
-      data: reqData,
-      dataType: 'json',
-      success: function (data) {
-        return this.processLoadedData(data, callback);
-      }.bind(this)
-    });
+  loadStats() {
+    return (
+      this.load(l('/xhr/stats/'), {path: this.pootlePath})
+          .done((data) => this.setState({data}))
+    );
+  },
+
+  loadChecks() {
+    return (
+      this.load(l('/xhr/stats/checks'), {path: this.pootlePath})
+          .done((data) => this.setState({isExpanded: true, checksData: data}))
+    );
   },
 
   /* Path summary */
-  toggleChecks: function (e) {
-    e.preventDefault();
-    var $el = $(e.currentTarget),
-        $node = $("#" + $el.data('target')),
-        $iconNode = $el.find("#js-expand-icon"),
-        data = $node.data();
-
-    function hideShow() {
-      $node.data('collapsed', !data.collapsed);
-      var newClass = data.collapsed ? 'icon-expand-stats' : 'icon-collapse-stats';
-      var newText = data.collapsed ? gettext('Expand details') : gettext('Collapse details');
-      $iconNode.attr('class', newClass);
-      $iconNode.attr('title', newText);
-      $node.slideToggle('slow', 'easeOutQuad');
-    }
-
-    if (data.loaded) {
-      hideShow();
+  toggleChecks() {
+    if (this.state.checksData) {
+      this.setState({isExpanded: !this.state.isExpanded});
+      this.navigate();
     } else {
-      $('body').spin();
-      var url = l('/xhr/stats/checks/'),
-          reqData = {
-            path: this.pootlePath
-          };
-      $.ajax({
-        url: url,
-        data: reqData,
-        success: function (data) {
-          $node.hide();
-          if (data !== null && Object.keys(data).length) {
-            $node.find('.js-checks').each(function (e) {
-              var empty = true,
-                  $cat = $(this);
-
-              $cat.find('.js-check').each(function (e) {
-                var $check = $(this),
-                    code = $(this).data('code');
-                if (code in data) {
-                  empty = false;
-                  $check.show();
-                  $check.find('.check-count a').html(data[code]);
-                } else {
-                  $check.hide();
-                }
-              });
-
-              $cat.toggle(!empty);
-            });
-
-            $('#js-stats-checks').show();
-          }
-
-          $node.data('loaded', true);
-          hideShow();
-        },
-        complete: onDataLoad
-      });
+      this.loadChecks().done(() => this.navigate());
     }
-  }
+  },
+
+  updateChecksToggleUI() {
+    const { isExpanded } = this.state;
+
+    const newClass = isExpanded ? 'collapse' : 'expand';
+    const newText = isExpanded ? gettext('Collapse details') : gettext('Expand details');
+
+    this.$expandIcon.attr('class', `icon-${newClass}-stats`);
+    this.$expandIcon.attr('title', newText);
+
+    this.$extraDetails.toggle(isExpanded);
+  },
+
+  updateChecksUI() {
+    const data = this.state.checksData;
+
+    if (data !== null && Object.keys(data).length) {
+      this.$extraDetails.find('.js-checks').each(function (e) {
+        var empty = true,
+            $cat = $(this);
+
+        $cat.find('.js-check').each(function (e) {
+          var $check = $(this),
+              code = $(this).data('code');
+          if (code in data) {
+            empty = false;
+            $check.show();
+            $check.find('.check-count a').html(data[code]);
+          } else {
+            $check.hide();
+          }
+        });
+
+        $cat.toggle(!empty);
+      });
+
+      $('#js-stats-checks').show();
+    }
+  },
+
+  updateUI() {
+    this.updateChecksToggleUI();
+    this.updateChecksUI();
+    this.updateStatsUI();
+  },
+
+  navigate() {
+    const { isExpanded } = this.state;
+    const currentURL = `${window.location.pathname}${window.location.search}`;
+    const path = l(this.pootlePath);
+    const newURL = isExpanded ? `${path}?details` : path;
+    if (currentURL !== newURL) {
+      window.history.pushState({isExpanded}, '', newURL);
+    }
+  },
+
 };
 
 
-module.exports = stats;
+export default stats;

@@ -7,7 +7,7 @@
 {% block header_content_block %}
 <div id="top-stats" class="header">
   {% block header_content %}
-  <a id="js-path-summary" data-target="js-path-summary-more" href="#">
+  <a id="js-path-summary" href="#">
     <div id="progressbar">
       <i id="js-expand-icon" class="icon-expand-stats"
          title="{% trans 'Expand details' %}"></i>
@@ -15,7 +15,7 @@
     </div>
   </a>
 
-  <div class="path-summary-more" id="js-path-summary-more" data-loaded="false" data-collapsed="true">
+  <div class="path-summary-more" id="js-path-summary-more">
     <div class="hd">
       <h3><span>{% trans "Translation Statistics" %}</span></h3>
     </div>
@@ -52,7 +52,7 @@
       </div>
       <div class="bd">
       {% for item in check_categories %}
-        <div id="check-{{ item.code }}" class="checks js-checks">
+        <div id="check-{{ item.name }}" class="checks js-checks">
           <h4 class="clear">{{ item.title }}</h4>
           {% for check in item.checks %}
           <div class="check js-check" data-code="{{ check.code }}">
@@ -84,9 +84,7 @@
     {% if announcements %}
     <div class="sidebar-group">
       {% for announcement in announcements %}
-      <div class="staticpage-on-sidebar">
         {% include "staticpages/_body.html" with page=announcement %}
-      </div>
       {% endfor %}
     </div>
     {% endif %}
@@ -141,7 +139,8 @@ $(function () {
   PTL.stats.init({
     pootlePath: "{{ pootle_path }}",
     isAdmin: {{ is_admin|yesno:"true,false" }},
-    data: {{ stats|safe }}
+    isInitiallyExpanded: {{ is_store|yesno:"true,false" }},
+    initialData: {{ stats|safe }},
   });
 
   {% if 'finished' in request.GET %}

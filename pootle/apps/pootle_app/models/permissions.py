@@ -75,7 +75,7 @@ def get_permissions_by_username(username, directory):
         else:
             permissions_cache[pootle_path] = None
 
-        cache.set(key, permissions_cache, settings.OBJECT_CACHE_TIMEOUT)
+        cache.set(key, permissions_cache, settings.POOTLE_CACHE_TIMEOUT)
 
     return permissions_cache[pootle_path]
 
@@ -101,7 +101,7 @@ def get_matching_permissions(user, directory, check_default=True):
 
 def check_user_permission(user, permission_codename, directory,
                           check_default=True):
-    """Checks if the current user has the permission the perform
+    """Checks if the current user has the permission to perform
     ``permission_codename``."""
     if user.is_superuser:
         return True

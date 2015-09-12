@@ -98,36 +98,6 @@ Update the minimum version number for the requirements in:
 - :file:`pootle/checks.py`
 
 
-Update the requirements files:
-
-.. code-block:: bash
-
-    $ make requirements-pinned.txt
-
-
-.. note:: This creates the following files:
-
-       - :file:`requirements-pinned.txt` - the maximum available version when
-         we released.  Chances are we've tested with these and they are good.
-         Using this would prevent a person from installing something newer but
-         untested.
-
-.. FIXME check that these are actually packaged next time we build as they are
-   files for release.
-
-
-Adjust the roadmap
-------------------
-
-The roadmap file needs to be updated.  Remove things that are part of this
-release.  Adjust any version numbering if for example we're moving to Django
-1.6 we need to change the proposed release numbers.
-
-Look at the actual roadmap commitments and change if needed. These will remain
-during the lifetime of this version so it is good to adjust them before we
-branch.
-
-
 Check copyright dates
 ---------------------
 
@@ -139,6 +109,32 @@ that needs fixing.
     $ git grep 2013  # Should pick up anything that should be examined
 
 
+Set build settings
+------------------
+
+Create :file:`~/.pootle/pootle_build.conf` with the following content:
+
+.. code-block:: python
+
+    #!/usr/bin/env python
+    # -*- coding: utf-8 -*-
+
+    """Configuration file to build Pootle.
+
+    Must be placed in ~/.pootle/pootle_build.conf
+    """
+
+    # Django now requires to set some secret key to be set.
+    SECRET_KEY = '__BuildingPootle_1234567890__'
+
+    # Silence some checks so the build output is cleaner.
+    SILENCED_SYSTEM_CHECKS = [
+        'pootle.W006',  # sqlite database backend is unsupported
+        'pootle.W010',  # DEFAULT_FROM_EMAIL has default setting
+        'pootle.W011',  # POOTLE_CONTACT_EMAIL has default setting
+    ]
+
+
 Update checks descriptions
 --------------------------
 
@@ -148,7 +144,13 @@ quality checks.
 
 .. code-block:: bash
 
-    $ DJANGO_SETTINGS_MODULE=pootle.settings ./setup.py build_checks_templates
+    $ mkvirtualenv build-checks-templates
+    (build-checks-templates)$ pip install -r requirements/build.txt
+    (build-checks-templates)$ export POOTLE_SETTINGS=~/.pootle/pootle_build.conf
+    (build-checks-templates)$ DJANGO_SETTINGS_MODULE=pootle.settings ./setup.py build_checks_templates
+    (build-checks-templates)$ deactivate
+    $ unset POOTLE_SETTINGS
+    $ rmvirtualenv build-checks-templates
 
 
 Update translations
@@ -262,9 +264,13 @@ checkout run:
 
     $ mkvirtualenv build-pootle-release
     (build-pootle-release)$ pip install -r requirements/build.txt
+    (build-pootle-release)$ export PYTHONPATH="${PYTHONPATH}:`pwd`"
+    (build-pootle-release)$ export POOTLE_SETTINGS=~/.pootle/pootle_build.conf
+    (build-pootle-release)$ cd pootle/static/js && npm install && cd ../../../
     (build-pootle-release)$ make mo-all  # If we are shipping an RC
     (build-pootle-release)$ make build
     (build-pootle-release)$ deactivate
+    $ unset POOTLE_SETTINGS
     $ rmvirtualenv build-pootle-release
 
 
@@ -297,7 +303,8 @@ You can then proceed with other tests such as checking:
 
    .. code-block:: bash
 
-     (test-pootle-release)$ pootle setup
+     (test-pootle-release)$ pootle migrate
+     (test-pootle-release)$ pootle initdb
      (test-pootle-release)$ pootle start
      (test-pootle-release)$  # Browse to localhost:8000
 
@@ -316,7 +323,8 @@ You can then proceed with other tests such as checking:
 
       .. code-block:: bash
 
-        (test-pootle-release)$ pootle setup
+        (test-pootle-release)$ pootle migrate
+        (test-pootle-release)$ pootle initdb
         (test-pootle-release)$ pootle start
         (test-pootle-release)$  # Browse to localhost:8000
 
@@ -346,7 +354,7 @@ You can then proceed with other tests such as checking:
 
       .. code-block:: bash
 
-        (test-pootle-release)$ pootle setup
+        (test-pootle-release)$ pootle migrate
         (test-pootle-release)$ pootle start
         (test-pootle-release)$  # Browse to localhost:8000
 
@@ -468,16 +476,9 @@ Run the following to publish the package on PyPI:
 Create a release on Github
 --------------------------
 
-- https://github.com/translate/pootle/releases/new
-
-You will need:
-
-- Tarball of the release
-- Release notes in Markdown
-
-
 Do the following to create the release:
 
+#. Go to https://github.com/translate/pootle/releases/new
 #. Draft a new release with the corresponding tag version
 #. Convert the major changes (no more than five) in the release notes to
    Markdown with `Pandoc <http://pandoc.org/>`_. Bugfix releases can replace
@@ -502,13 +503,10 @@ We use github pages for the website. First we need to checkout the pages:
 #. In :file:`_posts/` add a new release posting. Use the same text used for the
    :ref:`Github release <releasing#create-github-release>` description,
    including the link to the full release notes.
-#. Change ``$version`` as needed. See :file:`download.html`,
-   :file:`_config.yml` and :command:`git grep $old_release`
+#. Change ``$version`` as needed. See :file:`_config.yml` and
+   :command:`git grep $old_release`
 #. :command:`git commit` and :command:`git push` -- changes are quite quick so
    easy to review.
-
-.. note:: FIXME it would be great if gh-pages accepted .rst, maybe it can if we
-   prerender just that page?
 
 
 Announce to the world

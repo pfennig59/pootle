@@ -9,13 +9,15 @@
 
 from itertools import groupby
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.core.urlresolvers import reverse
 from django.db.models import Max, Q
 from django.http import Http404
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect
 from django.template import loader, RequestContext
+from django.utils.safestring import mark_safe
 from django.utils.translation import to_locale, ugettext as _
 from django.utils.translation.trans_real import parse_accept_lang_header
 from django.utils import timezone
@@ -31,14 +33,12 @@ from pootle.core.decorators import (get_path_obj, get_resource,
 from pootle.core.exceptions import Http400
 from pootle.core.http import JsonResponse, JsonResponseBadRequest
 from pootle_app.models.directory import Directory
-from pootle_app.models.permissions import check_user_permission
-from pootle_misc.checks import category_ids, check_names
+from pootle_app.models.permissions import check_permission, check_user_permission
+from pootle_misc.checks import get_category_id, check_names
 from pootle_misc.forms import make_search_form
 from pootle_misc.util import ajax_required, to_int, get_date_interval
 from pootle_statistics.models import (Submission, SubmissionFields,
                                       SubmissionTypes)
-from virtualfolder.helpers import extract_vfolder_from_path
-from virtualfolder.models import VirtualFolder
 
 from .decorators import get_unit_context
 from .fields import to_python
@@ -146,6 +146,7 @@ def get_search_query(form, units_queryset):
         result = result | subresult
 
     return result
+
 
 def get_search_exact_query(form, units_queryset):
     phrase = form.cleaned_data['search']
@@ -262,7 +263,7 @@ def get_step_query(request, units_queryset):
                 elif 'category' in request.GET:
                     category_name = request.GET['category']
                     try:
-                        category = category_ids[category_name]
+                        category = get_category_id(category_name)
                     except KeyError:
                         raise Http404
 
@@ -468,8 +469,12 @@ def get_units(request):
     User = get_user_model()
     request.profile = User.get(request.user)
     limit = request.profile.get_unit_rows()
+    vfolder = None
 
-    vfolder, pootle_path = extract_vfolder_from_path(pootle_path)
+    if 'virtualfolder' in settings.INSTALLED_APPS:
+        from virtualfolder.helpers import extract_vfolder_from_path
+
+        vfolder, pootle_path = extract_vfolder_from_path(pootle_path)
 
     units_qs = Unit.objects.get_for_path(pootle_path, request.profile)
 
@@ -575,10 +580,15 @@ def timeline(request, unit):
     """Returns a JSON-encoded string including the changes to the unit
     rendered in HTML.
     """
-    timeline = Submission.objects.filter(unit=unit, field__in=[
-        SubmissionFields.TARGET, SubmissionFields.STATE,
-        SubmissionFields.COMMENT, SubmissionFields.NONE
-    ]).exclude(
+    timeline = Submission.objects.filter(
+        unit=unit,
+    ).filter(
+        Q(field__in=[
+            SubmissionFields.TARGET, SubmissionFields.STATE,
+            SubmissionFields.COMMENT, SubmissionFields.NONE
+        ]) |
+        Q(type__in=SubmissionTypes.SUGGESTION_TYPES)
+    ).exclude(
         field=SubmissionFields.COMMENT,
         creation_time=unit.commented_on
     ).order_by("id")
@@ -610,12 +620,18 @@ def timeline(request, unit):
 
             entry = {
                 'field': item.field,
-                'field_name': SubmissionFields.NAMES_MAP[item.field],
+                'field_name': SubmissionFields.NAMES_MAP.get(item.field, None),
+                'type': item.type,
             }
 
             if item.field == SubmissionFields.STATE:
                 entry['old_value'] = STATES_MAP[int(to_python(item.old_value))]
                 entry['new_value'] = STATES_MAP[int(to_python(item.new_value))]
+            elif item.suggestion:
+                entry.update({
+                    'suggestion_text': item.suggestion.target,
+                    'suggestion_description': mark_safe(item.get_suggestion_description()),
+                })
             elif item.quality_check:
                 check_name = item.quality_check.name
                 entry.update({
@@ -652,18 +668,15 @@ def timeline(request, unit):
 
     context['entries_group'] = entries_group
 
-    if request.is_ajax():
-        # The client will want to confirm that the response is relevant for
-        # the unit on screen at the time of receiving this, so we add the uid.
-        json = {'uid': unit.id}
+    # The client will want to confirm that the response is relevant for
+    # the unit on screen at the time of receiving this, so we add the uid.
+    json = {'uid': unit.id}
 
-        t = loader.get_template('editor/units/xhr_timeline.html')
-        c = RequestContext(request, context)
-        json['timeline'] = t.render(c).replace('\n', '')
+    t = loader.get_template('editor/units/xhr_timeline.html')
+    c = RequestContext(request, context)
+    json['timeline'] = t.render(c).replace('\n', '')
 
-        return JsonResponse(json)
-    else:
-        return render(request, "editor/units/timeline.html", context)
+    return JsonResponse(json)
 
 
 @ajax_required
@@ -762,20 +775,28 @@ def get_edit_unit(request, unit):
     project = translation_project.project
 
     priority = None
-    vfolder_pk = request.GET.get('vfolder', '')
 
-    if vfolder_pk:
-        try:
-            # If we are translating a virtual folder, then display its priority.
-            # Note that the passed virtual folder pk might be invalid.
-            priority = VirtualFolder.objects.get(pk=vfolder_pk).priority
-        except VirtualFolder.DoesNotExist:
-            pass
+    if 'virtualfolder' in settings.INSTALLED_APPS:
+        vfolder_pk = request.GET.get('vfolder', '')
 
-    if priority is None:
-        # Retrieve the unit top priority, if any. This can happen if we are not
-        # in a virtual folder or if the passed virtual folder pk is invalid.
-        priority = unit.vfolders.aggregate(priority=Max('priority'))['priority']
+        if vfolder_pk:
+            from virtualfolder.models import VirtualFolder
+
+            try:
+                # If we are translating a virtual folder, then display its
+                # priority.
+                # Note that the passed virtual folder pk might be invalid.
+                priority = VirtualFolder.objects.get(pk=vfolder_pk).priority
+            except VirtualFolder.DoesNotExist:
+                pass
+
+        if priority is None:
+            # Retrieve the unit top priority, if any. This can happen if we are
+            # not in a virtual folder or if the passed virtual folder pk is
+            # invalid.
+            priority = unit.vfolders.aggregate(
+                priority=Max('priority')
+            )['priority']
 
     template_vars = {
         'unit': unit,
@@ -834,7 +855,7 @@ def permalink_redirect(request, unit):
 @get_resource
 def get_qualitycheck_stats(request, *args, **kwargs):
     failing_checks = request.resource_obj.get_checks()
-    return JsonResponse(failing_checks)
+    return JsonResponse(failing_checks if failing_checks is not None else {})
 
 
 @ajax_required
@@ -844,11 +865,14 @@ def get_qualitycheck_stats(request, *args, **kwargs):
 def get_stats(request, *args, **kwargs):
     stats = request.resource_obj.get_stats()
 
-    if isinstance(request.resource_obj, Directory):
-        stats['vfolders'] = VirtualFolder.get_stats_for(
-            request.resource_obj.pootle_path,
-            request.user.is_superuser
-        )
+    if (isinstance(request.resource_obj, Directory) and
+        'virtualfolder' in settings.INSTALLED_APPS):
+        stats['vfolders'] = {}
+
+        for vfolder_treeitem in request.resource_obj.vf_treeitems.iterator():
+            if request.user.is_superuser or vfolder_treeitem.is_visible:
+                stats['vfolders'][vfolder_treeitem.code] = \
+                    vfolder_treeitem.get_stats(include_children=False)
 
     return JsonResponse(stats)
 
@@ -959,28 +983,42 @@ def suggest(request, unit):
 
 
 @ajax_required
-@get_unit_context('review')
+@require_http_methods(['POST', 'DELETE'])
+def manage_suggestion(request, uid, sugg_id):
+    """Dispatches the suggestion action according to the HTTP verb."""
+    if request.method == 'DELETE':
+        return reject_suggestion(request, uid, sugg_id)
+    elif request.method == 'POST':
+        return accept_suggestion(request, uid, sugg_id)
+
+
+@get_unit_context()
 def reject_suggestion(request, unit, suggid):
     json = {
         'udbid': unit.id,
         'sugid': suggid,
     }
 
-    if request.POST.get('reject'):
-        try:
-            sugg = unit.suggestion_set.get(id=suggid)
-        except ObjectDoesNotExist:
-            raise Http404
+    try:
+        sugg = unit.suggestion_set.get(id=suggid)
+    except ObjectDoesNotExist:
+        raise Http404
 
-        unit.reject_suggestion(sugg, request.translation_project,
-                               request.profile)
+    # In order to be able to reject a suggestion, users have to either:
+    # 1. Have `review` rights, or
+    # 2. Be the author of the suggestion being rejected
+    if (not check_permission('review', request) and
+        (request.user.is_anonymous() or request.user != sugg.user)):
+        raise PermissionDenied(_('Insufficient rights to access review mode.'))
 
-        json['user_score'] = request.profile.public_score
+    unit.reject_suggestion(sugg, request.translation_project,
+                           request.profile)
+
+    json['user_score'] = request.profile.public_score
 
     return JsonResponse(json)
 
 
-@ajax_required
 @get_unit_context('review')
 def accept_suggestion(request, unit, suggid):
     json = {
@@ -988,25 +1026,24 @@ def accept_suggestion(request, unit, suggid):
         'sugid': suggid,
     }
 
-    if request.POST.get('accept'):
-        try:
-            suggestion = unit.suggestion_set.get(id=suggid)
-        except ObjectDoesNotExist:
-            raise Http404
+    try:
+        suggestion = unit.suggestion_set.get(id=suggid)
+    except ObjectDoesNotExist:
+        raise Http404
 
-        unit.accept_suggestion(suggestion, request.translation_project,
-                               request.profile)
+    unit.accept_suggestion(suggestion, request.translation_project,
+                           request.profile)
 
-        json['user_score'] = request.profile.public_score
-        json['newtargets'] = [highlight_whitespace(target)
-                              for target in unit.target.strings]
-        json['newdiffs'] = {}
-        for sugg in unit.get_suggestions():
-            json['newdiffs'][sugg.id] = \
-                    [highlight_diffs(unit.target.strings[i], target)
-                     for i, target in enumerate(sugg.target.strings)]
+    json['user_score'] = request.profile.public_score
+    json['newtargets'] = [highlight_whitespace(target)
+                          for target in unit.target.strings]
+    json['newdiffs'] = {}
+    for sugg in unit.get_suggestions():
+        json['newdiffs'][sugg.id] = \
+                [highlight_diffs(unit.target.strings[i], target)
+                 for i, target in enumerate(sugg.target.strings)]
 
-        json['checks'] = _get_critical_checks_snippet(request, unit)
+    json['checks'] = _get_critical_checks_snippet(request, unit)
 
     return JsonResponse(json)
 

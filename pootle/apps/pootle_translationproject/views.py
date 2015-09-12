@@ -25,7 +25,6 @@ from pootle.core.utils.json import jsonify
 from pootle_app.models.permissions import check_permission
 from pootle_app.views.admin.permissions import admin_permissions as admin_perms
 from staticpages.models import StaticPage
-from virtualfolder.models import VirtualFolder
 
 
 SIDEBAR_COOKIE_NAME = 'pootle-browser-sidebar'
@@ -135,8 +134,9 @@ def browse(request, translation_project, dir_path, filename=None):
 
         ctx.update(handle_upload_form(request))
 
-        has_download = (check_permission('translate', request) or
-                        check_permission('suggest', request))
+        has_download = (not translation_project.is_terminology_project and
+                        (check_permission('translate', request) or
+                         check_permission('suggest', request)))
         ctx.update({
             'display_download': has_download,
             'has_sidebar': True,
@@ -156,25 +156,28 @@ def browse(request, translation_project, dir_path, filename=None):
             }
         })
 
-        vfolders = get_vfolders(directory, all_vfolders=is_admin)
-        if len(vfolders) > 0:
-            table_fields = ['name', 'priority', 'progress', 'total',
-                            'need-translation', 'suggestions', 'critical',
-                            'activity']
-            ctx.update({
-                'vfolders': {
-                    'id': 'vfolders',
-                    'fields': table_fields,
-                    'headings': get_table_headings(table_fields),
-                    'items': vfolders,
-                },
-            })
+        if 'virtualfolder' in settings.INSTALLED_APPS:
+            vfolders = get_vfolders(directory, all_vfolders=is_admin)
+            if len(vfolders) > 0:
+                table_fields = ['name', 'priority', 'progress', 'total',
+                                'need-translation', 'suggestions', 'critical',
+                                'last-updated', 'activity']
+                ctx.update({
+                    'vfolders': {
+                        'id': 'vfolders',
+                        'fields': table_fields,
+                        'headings': get_table_headings(table_fields),
+                        'items': vfolders,
+                    },
+                })
 
-            #FIXME: set vfolders stats in the resource, don't inject them here.
-            stats['vfolders'] = VirtualFolder.get_stats_for(
-                directory.pootle_path,
-                all_vfolders=is_admin
-            )
+                #FIXME: set vfolders stats in the resource, don't inject them here.
+                stats['vfolders'] = {}
+
+                for vfolder_treeitem in directory.vf_treeitems.iterator():
+                    if request.user.is_superuser or vfolder_treeitem.is_visible:
+                        stats['vfolders'][vfolder_treeitem.code] = \
+                            vfolder_treeitem.get_stats(include_children=False)
 
     ctx.update({
         'parent': get_parent(directory if store is None else store),
@@ -183,6 +186,7 @@ def browse(request, translation_project, dir_path, filename=None):
         'language': language,
         'stats': jsonify(stats),
         'is_admin': is_admin,
+        'is_store': store is not None,
 
         'browser_extends': 'translation_projects/base.html',
     })
@@ -201,9 +205,7 @@ def browse(request, translation_project, dir_path, filename=None):
 def translate(request, translation_project, dir_path, filename):
     project = translation_project.project
 
-    is_terminology = (project.is_terminology or request.store and
-                                                request.store.is_terminology)
-    ctx = get_translation_context(request, is_terminology=is_terminology)
+    ctx = get_translation_context(request)
 
     ctx.update({
         'language': translation_project.language,

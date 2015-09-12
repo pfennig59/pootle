@@ -11,72 +11,52 @@
 import $ from 'jquery';
 
 
-let AuthAPI = {
+const AuthAPI = {
 
   apiRoot: l('/accounts/'),
 
-  signIn(reqData, nextURL) {
-    let url = `${this.apiRoot}login/?next=${encodeURIComponent(nextURL)}`;
-
+  request(url, data) {
     return Promise.resolve(
       $.ajax(url, {
         type: 'POST',
-        data: reqData,
+        data: data,
         dataType: 'json',
       })
     );
+  },
+
+  signIn(reqData, nextURL) {
+    const url = `${this.apiRoot}login/?next=${encodeURIComponent(nextURL)}`;
+
+    return this.request(url, reqData);
   },
 
   signUp(reqData) {
-    let url = `${this.apiRoot}signup/`;
+    const url = `${this.apiRoot}signup/`;
 
-    return Promise.resolve(
-      $.ajax(url, {
-        type: 'POST',
-        data: reqData,
-        dataType: 'json',
-      })
-    );
+    return this.request(url, reqData);
   },
 
   requestPasswordReset(reqData) {
-    let url = `${this.apiRoot}password/reset/`;
+    const url = `${this.apiRoot}password/reset/`;
 
-    return Promise.resolve(
-      $.ajax(url, {
-        type: 'POST',
-        data: reqData,
-        dataType: 'json',
-      })
-    );
+    return this.request(url, reqData);
   },
 
   passwordReset(reqData, url) {
     // XXX: this won't work still as we don't have the data separately
     if (!url) {
-      let { uidb36, key } = reqData;
+      const { uidb36, key } = reqData;
       url = `${this.apiRoot}password/reset/key/${uidb36}-${key}/`;
     }
 
-    return Promise.resolve(
-      $.ajax(url, {
-        type: 'POST',
-        data: reqData,
-        dataType: 'json',
-      })
-    );
+    return this.request(url, reqData);
   },
 
   verifySocial(reqData) {
-    let url = `${this.apiRoot}social/verify/`;
+    const url = `${this.apiRoot}social/verify/`;
 
-    return Promise.resolve(
-      $.ajax(url, {
-        type: 'POST',
-        data: reqData,
-        dataType: 'json',
-      })
-    );
+    return this.request(url, reqData);
   },
 
 };

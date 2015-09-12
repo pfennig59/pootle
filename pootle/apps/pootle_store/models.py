@@ -8,7 +8,9 @@
 # AUTHORS file for copyright and authorship information.
 
 import datetime
+import difflib
 import logging
+import operator
 import os
 
 from hashlib import md5
@@ -18,11 +20,11 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.db import models, transaction, IntegrityError
-from django.template.defaultfilters import escape, truncatechars
+from django.db.models import F
+from django.template.defaultfilters import truncatechars
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.http import urlquote
-from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
 from translate.filters.decorators import Category
@@ -50,7 +52,8 @@ from pootle_statistics.models import (SubmissionFields,
 from .fields import (TranslationStoreField, MultiStringField,
                      PLURAL_PLACEHOLDER, SEPARATOR)
 from .filetypes import factory_classes
-from .util import OBSOLETE, UNTRANSLATED, FUZZY, TRANSLATED, get_change_str
+from .util import (OBSOLETE, UNTRANSLATED, FUZZY, TRANSLATED, get_change_str,
+                   parse_pootle_revision)
 
 
 #
@@ -132,7 +135,7 @@ class Suggestion(models.Model, base.TranslationUnit):
     target_f = MultiStringField()
     target_hash = models.CharField(max_length=32, db_index=True)
     unit = models.ForeignKey('pootle_store.Unit')
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=False,
                              related_name='suggestions', db_index=True)
     reviewer = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
                                  related_name='reviews', db_index=True)
@@ -372,7 +375,6 @@ class Unit(models.Model, base.TranslationUnit):
         self._target_updated = False
         self._state_updated = False
         self._comment_updated = False
-        self._from_update_stores = False
         self._auto_translated = False
         self._encoding = 'UTF-8'
 
@@ -412,6 +414,7 @@ class Unit(models.Model, base.TranslationUnit):
         if not hasattr(self, '_log_user'):
             User = get_user_model()
             self._log_user = User.objects.get_system_user()
+        user = kwargs.pop("user", self._log_user)
 
         if not self.id:
             self._save_action = UNIT_ADDED
@@ -446,12 +449,14 @@ class Unit(models.Model, base.TranslationUnit):
                     self.state = UNTRANSLATED
                     self.store.mark_dirty(CachedMethods.WORDCOUNT_STATS)
 
-        # Updating unit from the .po file should not change its revision property,
+        # Updating unit from the .po file set its revision property to
+        # a new value (the same for all units during its store updated)
         # since that change doesn't require further sync but note that
         # auto_translated units require further sync
-        if ((not self._from_update_stores or self._auto_translated) and
-            (self._target_updated or self._state_updated
-             or self._comment_updated)):
+        revision = kwargs.pop('revision', None)
+        if revision is not None and not self._auto_translated:
+            self.revision = revision
+        elif self._target_updated or self._state_updated or self._comment_updated:
             self.revision = Revision.incr()
 
         if self.id and hasattr(self, '_save_action'):
@@ -495,7 +500,7 @@ class Unit(models.Model, base.TranslationUnit):
                 path=self.store.pootle_path
             )
 
-            self.add_initial_submission()
+            self.add_initial_submission(user=user)
 
         if self._source_updated or self._target_updated:
             self.update_qualitychecks()
@@ -507,7 +512,6 @@ class Unit(models.Model, base.TranslationUnit):
         self._target_updated = False
         self._state_updated = False
         self._comment_updated = False
-        self._from_update_stores = False
         self._auto_translated = False
 
         # update cache only if we are updating a single unit
@@ -551,12 +555,12 @@ class Unit(models.Model, base.TranslationUnit):
         user_projects = Project.accessible_by_user(user)
         return self.store.translation_project.project.code in user_projects
 
-    def add_initial_submission(self):
+    def add_initial_submission(self, user=None):
         if self.istranslated() or self.isfuzzy():
             Submission.objects.create(
                 creation_time=self.creation_time,
                 translation_project=self.store.translation_project,
-                submitter=self._log_user,
+                submitter=user or self._log_user,
                 unit=self,
                 store=self.store,
                 type=SubmissionTypes.UNIT_CREATE,
@@ -585,11 +589,6 @@ class Unit(models.Model, base.TranslationUnit):
 
         newunit.setid(self.getid())
         newunit.setcontext(self.getcontext())
-
-        if hasattr(newunit, "addalttrans"):
-            for suggestion in self.get_suggestions().iterator():
-                newunit.addalttrans(suggestion.target,
-                                    origin=unicode(suggestion.user))
 
         if self.isobsolete():
             newunit.makeobsolete()
@@ -660,8 +659,10 @@ class Unit(models.Model, base.TranslationUnit):
         return changed
 
     def update(self, unit, user=None):
+
         """Update in-DB translation from the given :param:`unit`.
 
+        :param user: User to attribute updates to.
         :rtype: bool
         :return: True if the new :param:`unit` differs from the current unit.
             Two units differ when any of the fields differ (source, target,
@@ -669,7 +670,7 @@ class Unit(models.Model, base.TranslationUnit):
         """
         changed = False
 
-        if user is not None:
+        if user is None:
             User = get_user_model()
             user = User.objects.get_system_user()
 
@@ -735,17 +736,6 @@ class Unit(models.Model, base.TranslationUnit):
             self.unitid = unicode(unit.getid()) or unicode(unit.source)
             self.unitid_hash = md5(self.unitid.encode("utf-8")).hexdigest()
             changed = True
-
-        if hasattr(unit, 'getalttrans'):
-            for suggestion in unit.getalttrans():
-                if suggestion.source == self.source:
-                    self.add_suggestion(suggestion.target, user=user, touch=False)
-
-                changed = True
-
-        if changed:
-            #TODO: check that Store.update() is in the traceback
-            self._from_update_stores = True
 
         return changed
 
@@ -845,8 +835,31 @@ class Unit(models.Model, base.TranslationUnit):
     def get_qualitychecks(self):
         return self.qualitycheck_set.all()
 
+    def get_critical_qualitychecks(self):
+        return self.get_qualitychecks().filter(category=Category.CRITICAL)
+
+    def get_active_critical_qualitychecks(self):
+        return self.get_active_qualitychecks().filter(category=Category.CRITICAL)
+
+    def get_warning_qualitychecks(self):
+        return self.get_qualitychecks().exclude(category=Category.CRITICAL)
+
     def get_active_qualitychecks(self):
         return self.qualitycheck_set.filter(false_positive=False)
+
+##################### Related Submissions ########################
+
+    def get_edits(self):
+        return self.submission_set.get_unit_edits()
+
+    def get_comments(self):
+        return self.submission_set.get_unit_comments()
+
+    def get_state_changes(self):
+        return self.submission_set.get_unit_state_changes()
+
+    def get_suggestion_reviews(self):
+        return self.submission_set.get_unit_suggestion_reviews()
 
 ##################### TranslationUnit ############################
 
@@ -971,6 +984,7 @@ class Unit(models.Model, base.TranslationUnit):
             self._save_action = UNIT_OBSOLETE
 
             self.state = OBSOLETE
+            self.index = 0
 
     def resurrect(self, is_fuzzy=False):
         if self.state > OBSOLETE:
@@ -1000,15 +1014,6 @@ class Unit(models.Model, base.TranslationUnit):
         newunit = cls()
         newunit.update(unit)
         return newunit
-
-    def addalttrans(self, txt, origin=None):
-        self.add_suggestion(txt, user=origin)
-
-    def getalttrans(self):
-        return self.get_suggestions()
-
-    def delalttrans(self, alternative):
-        alternative.delete()
 
     def fuzzy_translate(self, matcher):
         candidates = matcher.matches(self.source)
@@ -1140,7 +1145,8 @@ class Unit(models.Model, base.TranslationUnit):
         # Update some basic attributes so we can create submissions. Note
         # these do not conflict with `ScoreLog`'s interests, so it's safe
         self.target = suggestion.target
-        self.state = TRANSLATED
+        if self.state == FUZZY:
+            self.state = TRANSLATED
 
         if suggestion.user_id is not None:
             suggestion_user = suggestion.user
@@ -1158,6 +1164,7 @@ class Unit(models.Model, base.TranslationUnit):
         create_subs[SubmissionFields.TARGET] = [old_target, self.target]
         if old_state != self.state:
             create_subs[SubmissionFields.STATE] = [old_state, self.state]
+            self.store.mark_dirty(CachedMethods.WORDCOUNT_STATS)
 
         for field in create_subs:
             kwargs = {
@@ -1263,27 +1270,14 @@ class Unit(models.Model, base.TranslationUnit):
             result = []
         return result
 
-    def get_last_updated_message(self):
-        unit = {
-            'source': escape(truncatechars(self, 50)),
-            'url': self.get_translate_url(),
-        }
-
-        action_bundle = {
-            'action': _(
-                '<i><a href="%(url)s">%(source)s</a></i>&nbsp;'
-                'added',
-                unit
-            ),
+    def get_last_updated_info(self):
+        return {
             "display_datetime": dateformat.format(self.creation_time),
             "iso_datetime": self.creation_time.isoformat(),
+            "creation_time": int(dateformat.format(self.creation_time, 'U')),
+            "unit_source": truncatechars(self, 50),
+            "unit_url": self.get_translate_url(),
         }
-        return mark_safe(
-            '<time class="extra-item-meta js-relative-date"'
-            '    title="%(display_datetime)s" datetime="%(iso_datetime)s">&nbsp;'
-            '</time>&nbsp;'
-            u'<span class="action-text">%(action)s</span>'
-            % action_bundle)
 
 
 ###################### Store ###########################
@@ -1367,6 +1361,13 @@ class Store(models.Model, CachedTreeItem, base.TranslationStore):
         return self.name.startswith('pootle-terminology')
 
     @property
+    def parent_vfolder_treeitems(self):
+        if 'virtualfolder' in settings.INSTALLED_APPS:
+            return self.parent_vf_treeitems.all()
+
+        return []
+
+    @property
     def units(self):
         if hasattr(self, '_units'):
             return self._units
@@ -1416,16 +1417,19 @@ class Store(models.Model, CachedTreeItem, base.TranslationStore):
 
         if hasattr(self, '_units'):
             index = self.max_index() + 1
+            revision = None
+            if created:
+                revision = Revision.incr()
             for i, unit in enumerate(self._units):
                 unit.store = self
                 unit.index = index + i
-                unit.save()
+                unit.save(revision=revision)
 
         if self.state >= PARSED:
             self.update_dirty_cache()
 
     def delete(self, *args, **kwargs):
-        parent = self.get_parent()
+        parents = self.get_parents()
 
         store_log(user='system', action=STORE_DELETED,
                   path=self.pootle_path, store=self.id)
@@ -1438,8 +1442,8 @@ class Store(models.Model, CachedTreeItem, base.TranslationStore):
         super(Store, self).delete(*args, **kwargs)
 
         self.clear_all_cache(parents=False, children=False)
-        if parent is not None:
-            parent.update_all_cache()
+        for p in parents:
+            p.update_all_cache()
 
     def makeobsolete(self):
         """Make this store and all its units obsolete."""
@@ -1452,7 +1456,7 @@ class Store(models.Model, CachedTreeItem, base.TranslationStore):
         for unit_id in unit_ids:
             action_log(user='system', action=UNIT_OBSOLETE, lang=lang,
                        unit=unit_id, translation='', path=self.pootle_path)
-        unit_query.update(state=OBSOLETE)
+        unit_query.update(state=OBSOLETE, index=0)
         self.obsolete = True
         self.save()
         self.clear_all_cache(parents=False, children=False)
@@ -1487,21 +1491,6 @@ class Store(models.Model, CachedTreeItem, base.TranslationStore):
             units = self.unit_set.filter(id__in=ids[i:i+chunks])
             for unit in units.iterator():
                 yield unit
-
-    def get_matcher(self):
-        """builds a TM matcher from current translations and obsolete units"""
-        from translate.search import match
-        #FIXME: should we cache this?
-        matcher = match.matcher(
-            self,
-            max_candidates=1,
-            max_length=settings.FUZZY_MATCH_MAX_LENGTH,
-            min_similarity=settings.FUZZY_MATCH_MIN_SIMILARITY,
-            usefuzzy=True
-        )
-        matcher.extendtm(self.unit_set.filter(state=OBSOLETE))
-        matcher.addpercentage = False
-        return matcher
 
     def clean_stale_lock(self):
         if self.state != LOCKED:
@@ -1552,15 +1541,18 @@ class Store(models.Model, CachedTreeItem, base.TranslationStore):
             old_state = self.state
             self.state = LOCKED
             self.save()
+            keys = []
             try:
+                revision = Revision.incr()
                 for index, unit in enumerate(store.units):
+                    # Dont add duplicates
+                    if unit.getid() in keys:
+                        logging.warning(u'Unable to add duplicate unit: %s'
+                                        % unit.getid())
+                        continue
+                    keys.append(unit.getid())
                     if unit.istranslatable():
-                        try:
-                            self.addunit(unit, index)
-                        except IntegrityError as e:
-                            logging.warning(u'Data integrity error while '
-                                            u'importing unit %s:\n%s',
-                                            unit.getid(), e)
+                        self.addunit(unit, index, revision=revision)
             except:
                 # Something broke, delete any units that got created
                 # and return store state to its original value
@@ -1570,17 +1562,10 @@ class Store(models.Model, CachedTreeItem, base.TranslationStore):
                 raise
 
             self.state = PARSED
+            self.last_sync_revision = revision
             self.mark_all_dirty()
             self.save()
             return
-
-    def _remove_obsolete(self, source):
-        """Removes an obsolete unit from the DB. This will usually be used
-        after fuzzy matching.
-        """
-        obsolete_unit = self.findunit(source, obsolete=True)
-        if obsolete_unit:
-            obsolete_unit.delete()
 
     def get_file_mtime(self):
         disk_mtime = datetime.datetime \
@@ -1590,18 +1575,254 @@ class Store(models.Model, CachedTreeItem, base.TranslationStore):
 
         return disk_mtime
 
-    @transaction.atomic
-    def update(self, overwrite=False, store=None, fuzzy=False,
-               only_newer=False):
+    def update_index(self, start, delta):
+        op = operator.add if delta > 0 else operator.sub
+        Unit.objects.filter(store_id=self.id, index__gte=start).update(
+            index=op(F('index'), delta)
+        )
+
+    def mark_units_obsolete(self, uids_to_obsolete, revision=None):
+        """Marks a bulk of units as obsolete.
+
+        :param uids_to_obsolete: UIDs of the units to be marked as obsolete.
+        :return: The number of units marked as obsolete.
+        """
+        obsoleted = 0
+        for unit in self.findid_bulk(uids_to_obsolete):
+            # Use the same (parent) object since units will
+            # accumulate the list of cache attributes to clear
+            # in the parent Store object
+            unit.store = self
+            if not unit.isobsolete():
+                unit.makeobsolete()
+                unit.save(revision=revision)
+                obsoleted += 1
+
+        return obsoleted
+
+    def remove_modified_units(self, unit_ids):
+        """Returns a list of UIDs excluding those which have been modified since
+        the last sync.
+
+        :param unit_ids: set of UIDs for this store.
+        :return: set of UIDs.
+        """
+        # Get units that were modified after last sync
+        filter_by = {'store': self}
+        if self.last_sync_revision is not None:
+            filter_by.update({'revision__gt': self.last_sync_revision})
+
+        # If a dbunit is obsolete then the dbunit should be resurrected in any
+        # case
+        modified_units = set(
+            Unit.objects.filter(**filter_by).exclude(state=OBSOLETE)
+                        .values_list('id', flat=True).distinct()
+        )
+
+        # If some units have been modified since last sync keep them safe
+        unit_ids -= modified_units
+
+        return unit_ids
+
+    def update_units(self, store, uids_to_update, uid_index_map, user,
+                     revision=None, submission_type=None):
+        """Updates existing units in the store.
+
+        :param uids_to_update: UIDs of the units to be updated.
+        :param uid_index_map: dictionary of DB ID to index mappings.
+        :param user: attribute specific changes to this user.
+        :param revision: set updated unit revision to this value.
+        :param submission_type: set submission type for update.
+        :return: a tuple ``(updated, suggested)`` where ``updated`` is the
+            the number of units that were actually updated, and ``suggested``
+            is the number of suggestions added due to revision conflicts.
+        """
+        updated = 0
+        suggested = 0
+
+        store_revision = parse_pootle_revision(store)
+        uids_to_update = list(uids_to_update)
+        for unit in self.findid_bulk(uids_to_update):
+            # Use the same (parent) object since units will accumulate
+            # the list of cache attributes to clear in the parent Store
+            # object
+            unit.store = self
+            uid = unit.getid()
+            newunit = store.findid(uid)
+
+            # If the unit's revision is greater than the store's add a
+            # suggestion instead.
+            conflict_found = (isinstance(store_revision, int)
+                              and store_revision < unit.revision
+                              and unit.target != newunit.target)
+            if conflict_found:
+                suggestion, created = unit.add_suggestion(newunit.target, user)
+                if created:
+                    suggested += 1
+                continue
+
+            # FIXME: `old_unit = copy.copy(unit)?`
+            old_target = unit.target_f
+            old_state = unit.state
+
+            changed = unit.update(newunit, user=user)
+
+            if uid in uid_index_map:
+                unit.index = uid_index_map[uid]['index']
+                changed = True
+
+            if changed:
+                updated += 1
+                current_time = timezone.now()
+                self.record_submissions(unit, old_target, old_state,
+                                        current_time, user, submission_type)
+
+                # FIXME: extreme implicit hazard
+                if unit._comment_updated:
+                    unit.commented_by = user
+                    unit.commented_on = current_time
+
+                # Set unit fields if target was updated
+                # FIXME: extreme implicit hazard
+                if unit._target_updated:
+                    unit.submitted_by = user
+                    unit.submitted_on = current_time
+                    unit.reviewed_on = None
+                    unit.reviewed_by = None
+
+                unit.save(revision=revision)
+
+        return updated, suggested
+
+    def record_submissions(self, unit, old_target, old_state, current_time, user,
+                           submission_type=None):
+        """Records all applicable submissions for `unit`.
+
+        EXTREME HAZARD: this relies on implicit `._<field>_updated` members
+        being available in `unit`. Let's look into replacing such members with
+        something saner (#3895).
+        """
+        create_subs = {}
+
+        # FIXME: extreme implicit hazard
+        if unit._target_updated:
+            create_subs[SubmissionFields.TARGET] = [
+                old_target,
+                unit.target_f,
+            ]
+
+        # FIXME: extreme implicit hazard
+        if unit._state_updated:
+            create_subs[SubmissionFields.STATE] = [
+                old_state,
+                unit.state,
+            ]
+
+        # FIXME: extreme implicit hazard
+        if unit._comment_updated:
+            create_subs[SubmissionFields.COMMENT] = [
+                '',
+                unit.translator_comment or '',
+            ]
+
+        if submission_type is None:
+            submission_type = SubmissionTypes.SYSTEM
+
+        # Create Submission after unit saved
+        for field in create_subs:
+            sub = Submission(
+                creation_time=current_time,
+                translation_project=self.translation_project,
+                submitter=user,
+                unit=unit,
+                store=unit.store,
+                field=field,
+                type=submission_type,
+                old_value=create_subs[field][0],
+                new_value=create_subs[field][1]
+            )
+            # FIXME: we can store these objects in a list and
+            # `bulk_create()` them in a single go
+            sub.save()
+
+    def get_insert_points(self, opcodes, new_unitid_list, old_unitid_list,
+                          old_unitids):
+        """Returns a list of insert points with update index info.
+
+        :param opcodes: result of new and old unitid lists matching.
+        :param new_unitid_list: new list of UIDs.
+        :param old_unitid_list: old list of UIDs.
+        :param old_unitids: dictionary {'dbid': dbid, 'index': index}
+        :return: a list of tuples
+            ``(insert_at, uids_to_add, next_index, update_index_delta)`` where
+            ``insert_at`` is the point for inserting
+            ``uids_to_add`` are the units to be inserted
+            ``update_index_delta`` is the offset for index updating
+            ``next_index`` is the starting point after which
+            ``update_index_delta`` should be applied.
+        """
+
+        inserts = []
+        for (tag, i1, i2, j1, j2) in opcodes:
+            if tag == 'delete':
+                continue
+            elif tag == 'insert':
+                update_index_delta = 0
+                previous_index = 0
+                if i1 > 0:
+                    previous = old_unitids[old_unitid_list[i1 - 1]]
+                    previous_index = previous['index']
+                next_index = previous_index + 1
+                if i1 < len(old_unitid_list):
+                    next = old_unitids[old_unitid_list[i1]]
+                    next_index = next['index']
+                    delta = j2 - j1
+                    update_index_delta = delta - next_index + previous_index + 1
+
+                inserts.append((previous_index,
+                                new_unitid_list[j1:j2],
+                                next_index,
+                                update_index_delta))
+
+            elif tag == 'replace':
+                i1_index = old_unitids[old_unitid_list[i1 - 1]]['index']
+                i2_index = old_unitids[old_unitid_list[i2 - 1]]['index']
+                update_index_delta = j2 - j1 - i2_index + i1_index
+                inserts.append((i1_index,
+                                new_unitid_list[j1:j2],
+                                i2_index,
+                                update_index_delta))
+        return inserts
+
+    def get_common_dbids(self, opcodes, old_unitid_list, old_unitids):
+        """Returns a set of unit DB ids to be updated.
+
+        :param opcodes: result of new and old unitid lists matching.
+        :param old_unitid_list: old list of UIDs.
+        :param old_unitids: dictionary {'dbid': dbid, 'index': index}
+        :return: a set of unit DB ids to be updated.
+        """
+        update_dbids = set()
+
+        for (tag, i1, i2, j1, j2) in opcodes:
+            if tag == 'equal':
+                update_dbids.update(set(old_unitids[uid]['dbid']
+                                        for uid in old_unitid_list[i1:i2]))
+
+        return update_dbids
+
+    def update(self, overwrite=False, store=None, only_newer=False, user=None,
+               submission_type=None):
         """Update DB with units from file.
 
         :param overwrite: Whether to update all existing translations or
             keep safe units that updated after the last sync.
-        :param store: The target :class:`~pootle_store.models.Store`. If unset,
-            the current file will be used as a target.
-        :param fuzzy: Whether to perform fuzzy matching or not.
+        :param store: an optional source `Store` instance from TTK. If unset,
+            the current DB store's FS store will be used as a source.
         :param only_newer: Whether to update only the files that changed on
             disk after the last sync.
+        :param user: User to attribute updates to.
+        :param submission_type: Submission type of saved updates.
         """
         self.clean_stale_lock()
 
@@ -1635,6 +1856,9 @@ class Store(models.Model, CachedTreeItem, base.TranslationStore):
         self.state = LOCKED
         self.save()
 
+        store_revision = parse_pootle_revision(store)
+        max_unit_revision = self.get_max_unit_revision()
+        update_revision = Revision.incr()
         try:
             changes = {
                 'obsolete': 0,
@@ -1642,137 +1866,100 @@ class Store(models.Model, CachedTreeItem, base.TranslationStore):
                 'added': 0,
             }
 
-            if fuzzy:
-                matcher = self.get_matcher()
+            old_unitid_list = []  # unitid list for comparing (DB)
+            old_unitids = {}  # unitids dict (DB)
+            old_unitid_set = set()
+            old_obsolete_unitid_set = set()  # obsolete unitids in DB
+            update_unitids = {}
 
-            # Force a rebuild of the unit ID <-> DB ID index and get IDs for
-            # in-DB (old) and on-disk (new) stores
-            self.require_dbid_index(update=True, obsolete=True)
-            old_ids = set(self.dbid_index.keys())
-            new_ids = set(store.getids())
+            unit_values = self.unit_set.order_by('index').values_list(
+                'unitid', 'state', 'id', 'index',
+            )
+            for (unitid, state, dbid, index) in unit_values:
+                if state == OBSOLETE:
+                    old_obsolete_unitid_set.add(unitid)
+                else:
+                    old_unitid_list.append(unitid)
+                old_unitids[unitid] = {'dbid': dbid, 'index': index}
+                old_unitid_set.add(unitid)
 
-            # Remove old units or make them obsolete if they were already
-            # translated
-            obsolete_dbids = [self.dbid_index.get(uid)
-                              for uid in old_ids - new_ids]
-            for unit in self.findid_bulk(obsolete_dbids):
-                # Use the same (parent) object since units will accumulate
-                # the list of cache attributes to clear in the parent Store
-                # object
-                unit.store = self
-                if not unit.isobsolete():
-                    unit.makeobsolete()
-                    unit._from_update_stores = True
-                    unit.save()
-                    changes['obsolete'] += 1
+            new_unitid_list = sorted(store.getids(),
+                                     key=lambda x: store.findid(x).index)
+            new_unitid_set = set(new_unitid_list)
 
-            User = get_user_model()
-            system = User.objects.get_system_user()
+            if user is None:
+                User = get_user_model()
+                user = User.objects.get_system_user()
 
-            # Add new units to the store
-            new_units = (store.findid(uid) for uid in new_ids - old_ids)
-            for unit in new_units:
-                newunit = self.addunit(unit, unit.index, user=system)
-                changes['added'] += 1
+            sm = difflib.SequenceMatcher(None, old_unitid_list, new_unitid_list)
+            opcodes = sm.get_opcodes()
+            common_dbids = self.get_common_dbids(opcodes, old_unitid_list,
+                                                 old_unitids)
+            inserts = self.get_insert_points(opcodes, new_unitid_list,
+                                             old_unitid_list, old_unitids)
 
-                # Fuzzy match non-empty target strings
-                if fuzzy and not filter(None, newunit.target.strings):
-                    match_unit = newunit.fuzzy_translate(matcher)
-                    if match_unit:
-                        newunit._from_update_stores = True
-                        newunit.save()
-                        self._remove_obsolete(match_unit.source)
+            # Step 1:
+            # insert new units
+            # save indexes to be updated for existing units
 
-            common_dbids = set(self.dbid_index.get(uid)
-                               for uid in old_ids & new_ids)
+            offset = 0
+            for (insert_at, uids_to_add, next_index, delta) in inserts:
+                current_offset = offset
+                new_units = (store.findid(uid) for uid in uids_to_add)
+                if delta > 0:
+                    self.update_index(start=next_index + offset, delta=delta)
+                    offset += delta
 
+                for index, unit in enumerate(new_units):
+                    new_unit_index = insert_at + index + 1 + current_offset
+                    uid = unit.getid()
+                    if uid not in old_unitid_set:
+                        # Don't add unit if store revision is set and is less
+                        # than max unit revision.
+                        if (not isinstance(store_revision, int)
+                            or max_unit_revision <= store_revision):
+
+                            self.addunit(unit, new_unit_index, user=user,
+                                         revision=update_revision)
+                            changes['added'] += 1
+                    else:
+                        update_unitids[uid] = {'dbid': old_unitids[uid]['dbid'],
+                                               'index': new_unit_index}
+
+            # Step N-1: mark obsolete units as such
+
+            obsolete_dbids = [old_unitids[uid]['dbid']
+                              for uid in old_unitid_set -
+                                         old_obsolete_unitid_set -
+                                         new_unitid_set]
+            changes['obsolete'] = \
+                self.mark_units_obsolete(obsolete_dbids,
+                                         revision=update_revision)
+
+
+            # Step N: update existing units
+
+            update_dbids = set([x['dbid'] for x in update_unitids.values()])
+            common_dbids.update(update_dbids)
+
+            # Optimization: only go through unchanged units since the last sync
             if not overwrite:
-                # Get units that were modified after last sync
-                filter_by = {'store': self}
-                if self.last_sync_revision is not None:
-                    filter_by.update({'revision__gt': self.last_sync_revision})
+                common_dbids = self.remove_modified_units(common_dbids)
 
-                # If a dbunit is obsolete
-                # then the dbunit should be resurrected in any case
-                modified_units = set(
-                    Unit.objects.filter(**filter_by).exclude(state=OBSOLETE)
-                                .values_list('id', flat=True).distinct()
-                )
-
-                # If some units have been modified since last sync
-                # keep them safe
-                common_dbids -= modified_units
-
-            common_dbids = list(common_dbids)
-            for unit in self.findid_bulk(common_dbids):
-                # Use the same (parent) object since units will accumulate
-                # the list of cache attributes to clear in the parent Store
-                # object
-                unit.store = self
-                newunit = store.findid(unit.getid())
-                old_target_f = unit.target_f
-                old_unit_state = unit.state
-
-                changed = unit.update(newunit, user=system)
-
-                # Unit's index within the store might have changed
-                if unit.index != newunit.index:
-                    unit.index = newunit.index
-                    changed = True
-
-                # Fuzzy match non-empty target strings
-                if fuzzy and not filter(None, unit.target.strings):
-                    match_unit = unit.fuzzy_translate(matcher)
-                    if match_unit:
-                        changed = True
-                        self._remove_obsolete(match_unit.source)
-
-                if changed:
-                    changes['updated'] += 1
-                    create_subs = {}
-                    current_time = timezone.now()
-
-                    if unit._target_updated:
-                        create_subs[SubmissionFields.TARGET] = \
-                            [old_target_f, unit.target_f]
-
-                    if unit._state_updated:
-                        create_subs[SubmissionFields.STATE] = \
-                            [old_unit_state, unit.state]
-
-                    if unit._comment_updated:
-                        unit.commented_by = system
-                        unit.commented_on = current_time
-                        create_subs[SubmissionFields.COMMENT] = \
-                            ['', unit.translator_comment or '']
-
-                    # Create Submission after unit saved
-                    for field in create_subs:
-                        sub = Submission(
-                            creation_time=current_time,
-                            translation_project=self.translation_project,
-                            submitter=system,
-                            unit=unit,
-                            store=unit.store,
-                            field=field,
-                            type=SubmissionTypes.SYSTEM,
-                            old_value=create_subs[field][0],
-                            new_value=create_subs[field][1]
-                        )
-                        # FIXME: we can store these objects in a list and
-                        # `bulk_create()` them in a single go
-                        sub.save()
-
-                    # Set unit fields if target was updated
-                    if SubmissionFields.TARGET in create_subs:
-                        unit.submitted_by = system
-                        unit.submitted_on = current_time
-                        self.reviewed_on = None
-                        self.reviewed_by = None
-
-                    unit.save()
-
+            (changes['updated'],
+             changes['suggested']) = self.update_units(store, common_dbids,
+                                                       update_unitids, user,
+                                                       revision=update_revision,
+                                                       submission_type=submission_type)
             self.file_mtime = disk_mtime
+
+            if (filter(lambda x: changes[x] > 0, changes) and
+                store == self.file.store):
+                if self.last_sync_revision is not None:
+                    changes['unsynced'] = \
+                        self.increment_unsynced_unit_revision(update_revision)
+
+                self.last_sync_revision = update_revision
 
         finally:
             # Unlock store
@@ -1783,6 +1970,20 @@ class Store(models.Model, CachedTreeItem, base.TranslationStore):
                     get_change_str(changes), self.pootle_path,
                     self.get_max_unit_revision())
                 )
+
+    def increment_unsynced_unit_revision(self, update_revision):
+        filter_by = {
+            'store': self,
+            'revision__gt': self.last_sync_revision,
+            'revision__lt': update_revision,
+            'state__gt': OBSOLETE,
+        }
+        count = 0
+        for unit in Unit.simple_objects.filter(**filter_by):
+            unit.save(revision=Revision.incr())
+            count += 1
+
+        return count
 
     def serialize(self):
         from django.core.cache import caches
@@ -1796,9 +1997,15 @@ class Store(models.Model, CachedTreeItem, base.TranslationStore):
 
         ret = cache.get(path, version=rev)
         if not ret:
-            self.file.store.updateheader(add=True, X_Pootle_Path=path)
-            self.file.store.updateheader(add=True, X_Pootle_Revision=rev)
-            ret = str(self.file.store)
+            storeclass = self.get_file_class()
+            store = self.convert(storeclass)
+            if hasattr(store, "updateheader"):
+                # FIXME We need those headers on import
+                # However some formats just don't support setting metadata
+                store.updateheader(add=True, X_Pootle_Path=path)
+                store.updateheader(add=True, X_Pootle_Revision=rev)
+
+            ret = str(store)
             cache.set(path, ret, version=rev)
 
         return ret
@@ -1812,7 +2019,7 @@ class Store(models.Model, CachedTreeItem, base.TranslationStore):
         last_revision = self.get_max_unit_revision()
 
         #TODO only_newer -> not force
-        if (only_newer and
+        if (only_newer and self.file.exists() and
             self.last_sync_revision >= last_revision):
             logging.info(u"[sync] No updates for %s after [revision: %d]" %
                 (self.pootle_path, self.last_sync_revision))
@@ -1957,7 +2164,7 @@ class Store(models.Model, CachedTreeItem, base.TranslationStore):
         """Largest unit index"""
         return max_column(self.unit_set.all(), 'index', -1)
 
-    def addunit(self, unit, index=None, user=None):
+    def addunit(self, unit, index=None, user=None, revision=None):
         if index is None:
             index = self.max_index() + 1
 
@@ -1968,7 +2175,7 @@ class Store(models.Model, CachedTreeItem, base.TranslationStore):
             newunit.submitted_on = timezone.now()
 
         if self.id:
-            newunit.save()
+            newunit.save(revision=revision, user=user)
         else:
             # We can't save the unit if the store is not in the
             # database already, so let's keep it in temporary list
@@ -2008,7 +2215,7 @@ class Store(models.Model, CachedTreeItem, base.TranslationStore):
 
         unitid_hash = md5(id.encode("utf-8")).hexdigest()
         try:
-            return self.units.get(unitid_hash=unitid_hash)
+            return self.unit_set.get(unitid_hash=unitid_hash)
         except Unit.DoesNotExist:
             return None
 
@@ -2034,11 +2241,15 @@ class Store(models.Model, CachedTreeItem, base.TranslationStore):
     def can_be_updated(self):
         return not self.obsolete
 
-    def get_parent(self):
+    def get_parents(self):
         if self.parent.is_translationproject():
-            return self.translation_project
+            parents = [self.translation_project]
         else:
-            return self.parent
+            parents = [self.parent]
+
+        parents.extend(self.parent_vfolder_treeitems)
+
+        return parents
 
     def get_cachekey(self):
         return self.pootle_path
@@ -2050,7 +2261,14 @@ class Store(models.Model, CachedTreeItem, base.TranslationStore):
             'translated': 0,
             'fuzzy': 0
         }
-        res = self.units.values('state') \
+
+        # only count files with an ext matching the project ext
+        proj_ext = "." + self.translation_project.project.localfiletype
+
+        # XXX: `order_by()` here is important as it removes the default
+        # ordering for units. See #3897 for reference.
+        res = self.units.filter(store__name__endswith=proj_ext) \
+                        .order_by().values('state') \
                         .annotate(wordcount=models.Sum('source_wordcount'))
         for item in res:
             ret['total'] += item['wordcount']
@@ -2104,11 +2322,7 @@ class Store(models.Model, CachedTreeItem, base.TranslationStore):
         if max_unit is not None:
             max_time = max_unit.creation_time
             if max_time:
-                return {
-                    'id': max_unit.id,
-                    'creation_time': int(dateformat.format(max_time, 'U')),
-                    'snippet': max_unit.get_last_updated_message()
-                }
+                return max_unit.get_last_updated_info()
 
         return CachedTreeItem._get_last_updated()
 
@@ -2123,11 +2337,7 @@ class Store(models.Model, CachedTreeItem, base.TranslationStore):
         else:
             sub = submission
 
-        return {
-            'id': sub.unit.id,
-            'mtime': int(dateformat.format(sub.creation_time, 'U')),
-            'snippet': sub.get_submission_message()
-        }
+        return sub.get_submission_info()
 
     def _get_suggestion_count(self):
         """Check if any unit in the store has suggestions"""
@@ -2139,6 +2349,17 @@ class Store(models.Model, CachedTreeItem, base.TranslationStore):
         """This TreeItem method is used on directories, translation projects,
         languages and projects. For stores do nothing"""
         return
+
+    def all_pootle_paths(self):
+        """Get cache_key for all parents (to the Language and Project)
+        of current TreeItem
+        """
+        pootle_paths = super(Store, self).all_pootle_paths()
+
+        for vfolder_treeitem in self.parent_vfolder_treeitems:
+            pootle_paths.extend(vfolder_treeitem.all_pootle_paths())
+
+        return pootle_paths
 
     ### /TreeItem
 

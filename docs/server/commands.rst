@@ -49,50 +49,42 @@ project, run:
     $ pootle refresh_stats --project=tutorial --language=zu --language=eu
 
 
+Running commands with --no-rq option
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 2.7.1
+
+Some of the commands work asynchronously and will schedule jobs to RQ workers,
+rather than running them in the command process. You can change this behaviour
+using the :option:`--no-rq` command line option.
+
+This can be useful for running pootle commands in bash scripts or automating
+installation/upgrade/migration. It can also be useful for debugging otherwise
+asynchronous jobs.
+
+For example, to run :djadmin:`refresh_stats` in the command process and wait
+for the process to terminate:
+
+.. code-block:: bash
+
+    $ pootle refresh_stats --no-rq
+
+.. warning:: Do not ``pootle runserver --no-rq`` on a production server as this
+    will result in very poor performance.
+
+It is *not* generally safe to run commands in this mode if you have RQ workers
+active at the same time, as there is a risk that they conflict with other jobs
+dispatched to the workers.
+
+If there are RQ workers running, the command will ask for confirmation before
+proceeding. This can be overridden using the :option:`--noinput` flag, in
+which case the command will run even if there are.
+
+
 .. django-admin:: refresh_stats
 
 refresh_stats
 ^^^^^^^^^^^^^
-
-Refreshes all calculated statistics ensuring that they are up-to-date.
-
-The refreshing of the statistics is done by a background job so that it doesn't
-impact the normal operation of the server.  It will flush existing cached
-statistics data and update the statistics cache.
-
-.. note:: Disabled projects are processed.
-
-.. warning:: Do not run this command if you have multiple workers running
-   simultaneously. It should be run with a single worker process only.
-
-It's necessary to run this command after installing or upgrading Pootle. Also
-consider running this command when things might go out-of-sync: if you make
-changes directly in the database, if the cache backend has been restarted, etc.
-
-The time it takes to complete the whole process will vary depending on the
-number of translations you have in the database. If a user hits a page that
-needs to display stats but they haven't been calculated yet, a message will be
-displayed indicating that the stats are being recalculated.
-
-The :option:`--calculate-checks` option ensures that all quality checks are
-recalculated for all existing units in the database.
-
-To only recalculate the ``date_format`` quality check, run:
-
-.. code-block:: bash
-
-    $ pootle refresh_stats --calculate-checks --check=date_format
-
-When the :option:`--calculate-wordcount` option is set, the source wordcount
-will be recalculated for all existing units in the database.
-
-
-.. django-admin:: refresh_stats_rq
-
-refresh_stats_rq
-^^^^^^^^^^^^^^^^
-
-.. versionadded:: 2.7
 
 Refreshes all calculated statistics ensuring that they are up-to-date.
 
@@ -102,12 +94,10 @@ tasks will be created for the files parents.
 
 .. note:: Files in disabled projects are processed.
 
-.. note:: :djadmin:`refresh_stats` (the old command which works with a single
-   worker) is roughly twice as fast compared to this version of the command.
-   Your mileage might vary.
+This command allows statistics to be updated when using multiple RQ workers.
 
-This command was added to allow statistics to be updated when using multiple
-RQ workers.
+.. warning:: Please note that the actual translations **must be in Pootle**
+   before running this command. :djadmin:`update_stores` will pull them in.
 
 
 .. django-admin:: retry_failed_jobs
@@ -200,9 +190,9 @@ these parameters:
   Synchronizes files even if nothing changed in the database.
 
 :option:`--overwrite`
-  Copies all units from database stores regardless if they have been
-  modified since the last sync or not. This operation will (over)write
-  existing on-disk files.
+  Copies the current state of the DB stores (not only translations, but also
+  metadata) regardless if they have been modified since the last sync or
+  not. This operation will (over)write existing on-disk files.
 
 :option:`--skip-missing`
   Ignores files missing on disk, and no new files will be created.
@@ -265,6 +255,9 @@ list_languages
 Lists all the language codes for languages hosted on the server. This can be
 useful for automation.
 
+Accepts the :option:`--modified-since` parameter to list only those languages
+modified since the revision given by :djadmin:`revision`.
+
 
 .. django-admin:: list_projects
 
@@ -273,6 +266,23 @@ list_projects
 
 Lists all the project codes on the server. This might can be useful for
 automation.
+
+Accepts the :option:`--modified-since` parameter to list only those projects
+modified since the revision given by :djadmin:`revision`.
+
+
+.. django-admin:: contributors
+
+contributors
+^^^^^^^^^^^^
+
+.. versionadded:: 2.7.1
+
+Lists the contributors to a language, project or overall and the amount
+of contributions they have.
+
+Accepts the :option:`--from-revision` parameter to only take into account
+contributions newer than the revision given by :djadmin:`revision`.
 
 
 .. django-admin:: revision
@@ -474,6 +484,61 @@ Manually Installing Pootle
 These commands expose the database installation and upgrade process from the
 command line.
 
+.. django-admin:: init
+
+init
+^^^^
+
+Create the initial configuration for Pootle.
+
+Available options:
+
+:option:`--config`
+  The configuration file to write to.
+
+  Default: ``~/.pootle/pootle.conf``.
+
+:option:`--db`
+
+.. versionadded:: 2.7.1
+
+  The database backend that you are using
+
+  Default: ``sqlite``.
+  Available options: ``sqlite``, ``mysql``, ``postgresql``.
+
+:option:`--db-name`
+
+.. versionadded:: 2.7.1
+
+  The database name or path to database file if you are using sqlite.
+
+  Default for sqlite: ``dbs/pootle.db``.
+  Default for mysql/postgresql: ``pootledb``.
+
+:option:`--db-user`
+
+.. versionadded:: 2.7.1
+
+  Name of the database user. Not used with sqlite.
+
+  Default: ``pootle``.
+
+:option:`--db-host`
+
+.. versionadded:: 2.7.1
+
+  Database host to connect to. Not used with sqlite.
+
+  Default: ``localhost``.
+
+:option:`--db-port`
+
+.. versionadded:: 2.7.1
+
+  Port to connect to database on. Defaults to database backend's default port.
+  Not used with sqlite.
+
 
 .. _commands#migrate:
 
@@ -553,6 +618,114 @@ include any 3rd party customizations.
 When the :option:`--dev` flag is enabled, development builds will be created
 and the process will start a watchdog to track any client-side scripts for
 changes. Use this only when developing Pootle.
+
+
+.. _commands#user-management:
+
+Managing users
+--------------
+
+
+.. django-admin:: find_duplicate_emails
+
+find_duplicate_emails
+^^^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 2.7.1
+
+As of Pootle version 2.8, it will no longer be possible to have users with
+duplicate emails. This command will find any user accounts that have duplicate
+emails. It also shows the last login time for each affected user and indicates
+if they are superusers of the site.
+
+.. code-block:: bash
+
+    $ pootle find_duplicate_emails
+
+
+.. django-admin:: merge_user
+
+merge_user
+^^^^^^^^^^
+
+.. versionadded:: 2.7.1
+
+This can be used if you have a user with two accounts and need to merge one
+account into another. This will re-assign all submissions, units and
+suggestions, but not any of the user's profile data.
+
+This command requires 2 mandatory arguments, ``src_username`` and
+``target_username``, both should be valid usernames for users of your site.
+Submissions from the first are re-assigned to the second. The users' profile
+data is not merged.
+
+.. code-block:: bash
+
+    $ pootle merge_user src_username target_username
+
+
+.. django-admin:: purge_user
+
+purge_user
+^^^^^^^^^^
+
+.. versionadded:: 2.7.1
+
+This command can be used if you wish to permanently remove a user and revert
+the edits, comments and reviews that the user has made. This is useful for
+removing a spam account or other malicious user.
+
+This command requires a mandatory ``username`` argument, which should be a valid
+username for a user of your site.
+
+.. code-block:: bash
+
+    $ pootle purge_user username
+
+
+.. django-admin:: update_user_email
+
+update_user_email
+^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 2.7.1
+
+
+.. code-block:: bash
+
+    $ pootle update_user_email username email
+
+This command can be used if you wish to update a user's email address. This
+might be useful if you have users with duplicate email addresses.
+
+This command requires a mandatory ``username`` argument, which should be a valid
+username for a user of your site, and a mandatory ``email`` argument which
+should to update a valid email address.
+
+
+.. django-admin:: verify_user
+
+verify_user
+^^^^^^^^^^^
+
+.. versionadded:: 2.7.1
+
+Verify a user without the user having to go through email verification process.
+
+This is useful if you are migrating users that have already been verified, or
+if you want to create a superuser that can log in immediately.
+
+This command requires either a mandatory ``username`` argument, which should be a
+valid username for a user of your site, or the :option:`--all` flag if you wish to
+verify all users of your site.
+
+.. code-block:: bash
+
+    $ pootle verify_user username
+
+
+:option:`--all`
+  Verify all users of the site
 
 
 .. _commands#running:

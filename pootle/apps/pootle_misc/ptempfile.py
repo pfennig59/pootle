@@ -19,16 +19,7 @@ def mkstemp(*args, **kwargs):
     """
     fd, name = tempfile.mkstemp(*args, **kwargs)
     if hasattr(os, 'fchmod'):
-        os.fchmod(fd, settings.EXPORTED_FILE_MODE)
+        os.fchmod(fd, settings.POOTLE_SYNC_FILE_MODE)
     else:
-        os.chmod(name, settings.EXPORTED_FILE_MODE)
+        os.chmod(name, settings.POOTLE_SYNC_FILE_MODE)
     return fd, name
-
-
-def mkdtemp(*args, **kwargs):
-    """Wrap tempfile.mkdtemp, setting the permissions of the created temporary
-    file as specified in settings (see bug 1983).
-    """
-    name = tempfile.mkdtemp(*args, **kwargs)
-    os.chmod(name, settings.EXPORTED_DIRECTORY_MODE)
-    return name

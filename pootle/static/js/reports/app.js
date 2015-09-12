@@ -282,7 +282,8 @@ PTL.reports = {
         },
         yaxis: {
             max: PTL.reports.dailyData.max_day_score
-        }
+        },
+        colors: ['#66bb66', '#99ccff', '#ffcc33'],
       }
     );
   },
@@ -303,6 +304,7 @@ PTL.reports = {
   setData: function (data) {
     var translatedTotal = 0,
         reviewedTotal = 0,
+        suggestedTotal = 0,
         scoreDeltaTotal = 0,
         translatedFloorTotal = 0,
         remainders, delta, i;
@@ -335,6 +337,7 @@ PTL.reports = {
       row.remainder = row.translated - floor;
       translatedTotal += row.translated;
       reviewedTotal += row.reviewed;
+      suggestedTotal += row.suggested;
       scoreDeltaTotal += row.score_delta;
       translatedFloorTotal += floor;
       row.translated = floor;
@@ -342,6 +345,7 @@ PTL.reports = {
 
     translatedTotal = Math.round(translatedTotal);
     scoreDeltaTotal = Math.round(scoreDeltaTotal*100)/100;
+    data.groupedSuggestedTotal = suggestedTotal;
     data.groupedTranslatedTotal = translatedTotal;
     data.groupedReviewedTotal = reviewedTotal;
     data.groupedScoreDeltaTotal = scoreDeltaTotal;
@@ -383,7 +387,7 @@ PTL.reports = {
         PTL.reports.setData(data);
         $('#reports-results').empty();
         $('#reports-results').html(PTL.reports.tmpl.results(PTL.reports.data)).show();
-        $("#js-breadcrumb-user").html(data.meta.user.formatted_name).show();
+        $("#js-breadcrumb-user").text(data.meta.user.formatted_name).show();
         var showChart = data.daily !== undefined && data.daily.nonempty;
         $('#reports-activity').toggle(showChart);
         if (showChart) {

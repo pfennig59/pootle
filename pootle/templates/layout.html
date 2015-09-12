@@ -73,6 +73,7 @@
   <body id="{% block body_id %}pootle-body-base{% endblock %}" class="preload {% block body_class %}{% endblock %}">
     {% block body %}
     <div id="wrapper">
+      {% block wrapper %}
       <noscript>
         <div id="noscript" class="alert alert-danger affix">
           <h1>{% trans "Pootle requires JavaScript" %}</h1>
@@ -80,12 +81,6 @@
         </div>
       </noscript>
       <div id="alerts" class="affix js-alerts">
-        {% for message in messages %}
-        <div class="alert alert-block alert-{{ message.tags }} fade in" lang="{{ LANGUAGE_CODE }}">
-          <button type="button" class="close" data-dismiss="alert">&times;</button>
-          {{ message|safe }}
-        </div>
-        {% endfor %}
       </div>
 
       <nav id="navbar">
@@ -155,14 +150,15 @@
       {% endblock %}
     {% endblock %}
 
-    <div id="body">
-      {% block pre_content %}{% endblock %}
-      <div id="content">
-        {% block content %}{% endblock %}
+      <div id="body">
+        {% block pre_content %}{% endblock %}
+        <div id="content">
+          {% block content %}{% endblock %}
+        </div>
+        {% block post_content %}{% endblock %}
       </div>
-      {% block post_content %}{% endblock %}
-    </div>
 
+      {% endblock %}
     </div>
     {% block footer %}
     <div id="footer">

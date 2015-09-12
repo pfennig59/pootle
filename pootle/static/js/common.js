@@ -27,10 +27,6 @@ require('jquery-tipsy');
 // Backbone plugins
 require('backbone-safesync');
 
-// Bootstrap (possibly fine to get rid of it)
-require('bootstrap-alert');
-require('bootstrap-transition');
-
 // Other plugins
 var Spinner = require('spin');
 
@@ -113,10 +109,6 @@ PTL.common = {
       width: "resolve"
     });
 
-    // Hide the help messages for the Select2 multiple selects.
-    // FIXME: this needs to go away
-    $("select[multiple].js-select2").siblings("span.help_text").hide();
-
     // Set CSRF token for XHR requests (jQuery-specific)
     $.ajaxSetup({
       traditional: true,
@@ -158,16 +150,6 @@ PTL.common = {
       type: 'ajax',
       delegate: '.js-popup-ajax',
       mainClass: 'popup-ajax'
-    });
-
-    // TODO: move to the user profile module
-    $(document).on("click", ".js-popup-tweet", function(e) {
-      var width = 500;
-      var height = 260;
-      var left = (screen.width / 2) - (width / 2);
-      var top = (screen.height / 2) - (height / 2);
-      window.open(e.currentTarget.href, "_blank", "width="+width+",height="+height+",left="+left+",top="+top);
-      return false;
     });
 
     /* Generic toggle */

@@ -8,13 +8,13 @@
 
 'use strict';
 
-var React = require('react');
+import React from 'react';
 
-var User = require('models/user').User;
-var UserProfileEditClass = require('./components/edit');
-var UserProfileRouter = require('./routers');
+import UserEvent from 'components/UserEvent';
+import { User } from 'models/user';
 
-var UserProfileEdit = React.createFactory(UserProfileEditClass);
+import UserProfileEdit from './components/UserProfileEdit';
+import UserProfileRouter from './routers';
 
 
 window.PTL = window.PTL || {};
@@ -23,15 +23,49 @@ window.PTL = window.PTL || {};
 PTL.user = {
 
   init: function (opts) {
-    this.el = document.querySelector(opts.el);
+    if (opts.userData !== undefined) {
+      const editButton = document.querySelector('.js-user-profile-edit');
 
-    var user = new User(opts.userData, {urlRoot: l('/xhr/users/')});
-    var userProfileEdit = new UserProfileEdit({
-      router: new UserProfileRouter(),
-      appRoot: opts.appRoot,
-      user: user
-    });
-    React.render(userProfileEdit, this.el);
+      var user = new User(opts.userData, {urlRoot: l('/xhr/users/')});
+      const props = {
+        router: new UserProfileRouter(),
+        appRoot: opts.appRoot,
+        user: user
+      };
+      React.render(<UserProfileEdit {...props} />, editButton);
+
+      // FIXME: let's make the whole profile page a component, so a lot of the
+      // boilerplate here is rendered redundant
+      const popupBtns = document.querySelectorAll('.js-popup-tweet');
+      [...popupBtns].map((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+
+          const width = 500;
+          const height = 260;
+          const left = (screen.width / 2) - (width / 2);
+          const top = (screen.height / 2) - (height / 2);
+          window.open(e.currentTarget.href, '_blank',
+                      `width=${width},height=${height},left=${left},top=${top}`);
+        });
+      });
+    }
+
+    const lastActivity = document.querySelector('.js-last-action');
+    const data = opts.lastEvent;
+    const props = {
+      checkName: data.check_name,
+      checkDisplayName: data.check_display_name,
+      displayName: data.displayname,
+      email: data.email,
+      displayDatetime: data.display_datetime,
+      isoDatetime: data.iso_datetime,
+      type: data.type,
+      translationActionType: data.translation_action_type,
+      unitSource: data.unit_source,
+      unitUrl: data.unit_url,
+      username: data.username,
+    };
+    React.render(<UserEvent {...props} />, lastActivity);
   }
-
 };

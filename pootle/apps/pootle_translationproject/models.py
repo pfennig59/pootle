@@ -70,7 +70,7 @@ def create_translation_project(language, project):
 def scan_translation_projects(languages=None, projects=None):
     project_query = Project.objects.enabled()
 
-    if projects:
+    if projects is not None:
         project_query = project_query.filter(code__in=projects)
 
     for project in project_query.iterator():
@@ -83,7 +83,7 @@ def scan_translation_projects(languages=None, projects=None):
                     id__in=project.translationproject_set.live() \
                                   .values_list('language', flat=True)
                 )
-            if languages:
+            if languages is not None:
                 lang_query = lang_query.filter(code__in=languages)
 
             for language in lang_query.iterator():
@@ -227,6 +227,10 @@ class TranslationProject(models.Model, CachedTreeItem):
                                    state__gt=OBSOLETE).select_related('store')
 
     @property
+    def disabled(self):
+        return self.directory.obsolete or self.project.disabled
+
+    @property
     def is_terminology_project(self):
         return self.project.checkstyle == 'terminology'
 
@@ -245,6 +249,19 @@ class TranslationProject(models.Model, CachedTreeItem):
     def save(self, *args, **kwargs):
         created = self.id is None
 
+        if created:
+            from pootle_app.project_tree import translation_project_should_exist
+
+            template_tp = self.project.get_template_translationproject()
+            initialize_from_templates = False
+
+            if (not self.is_template_project and
+                template_tp is not None and
+                not translation_project_should_exist(self.language,
+                                                     self.project)):
+
+                initialize_from_templates = True
+
         self.directory = self.language.directory \
                                       .get_or_make_subdir(self.project.code)
         self.pootle_path = self.directory.pootle_path
@@ -258,7 +275,21 @@ class TranslationProject(models.Model, CachedTreeItem):
         super(TranslationProject, self).save(*args, **kwargs)
 
         if created:
+            if initialize_from_templates:
+                # We are adding a new TP and there are no files to import from
+                # disk, so initialize the TP files using the templates TP ones.
+                from pootle_app.project_tree import init_store_from_template
+
+                for template_store in template_tp.stores.iterator():
+                    init_store_from_template(self, template_store)
+
             self.scan_files()
+
+            if initialize_from_templates:
+                # Trigger stats refresh for TP added from UI.
+                # FIXME: This won't be necessary once #3547 is fixed.
+                for store in self.stores.live().iterator():
+                    store.update()
 
     def delete(self, *args, **kwargs):
         directory = self.directory
@@ -324,8 +355,23 @@ class TranslationProject(models.Model, CachedTreeItem):
     def get_cachekey(self):
         return self.directory.pootle_path
 
-    def get_parent(self):
-        return self.project
+    def get_parents(self):
+        return [self.project]
+
+    def clear_all_cache(self, children=True, parents=True):
+        super(TranslationProject, self).clear_all_cache(children=children,
+                                                        parents=parents)
+
+        if 'virtualfolder' in settings.INSTALLED_APPS:
+            # VirtualFolderTreeItem can only have VirtualFolderTreeItem parents
+            # so it is necessary to flush their cache by calling them one by
+            # one.
+            from virtualfolder.models import VirtualFolderTreeItem
+            tp_vfolder_treeitems = VirtualFolderTreeItem.objects.filter(
+                pootle_path__startswith=self.pootle_path
+            )
+            for vfolder_treeitem in tp_vfolder_treeitems.iterator():
+                vfolder_treeitem.clear_all_cache(children=False, parents=False)
 
     ### /TreeItem
 

@@ -8,266 +8,281 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Pootle 2.7.0\n"
 "Report-Msgid-Bugs-To: https://github.com/translate/pootle/issues/new\n"
-"POT-Creation-Date: 2015-06-15 11:37+0100\n"
-"PO-Revision-Date: 2013-10-28 16:01+0000\n"
+"POT-Creation-Date: 2015-09-07 16:55+0100\n"
+"PO-Revision-Date: 2015-08-03 12:59+0000\n"
 "Last-Translator: Julen Ruiz Aizpuru <julenx@gmail.com>\n"
 "Language-Team: librezale@librezale.org\n"
-"Language: \n"
+"Language: eu\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Pootle 2.5.0-beta1\n"
-"X-POOTLE-MTIME: 1382976119.0\n"
+"X-Generator: Pootle 2.5.1-rc1\n"
+"X-POOTLE-MTIME: 1438606789.000000\n"
 
 #: static/js/admin/components/AdminController.js:95
 msgid "Saved successfully."
-msgstr ""
+msgstr "Ondo gorde da."
 
 #: static/js/admin/components/AdminController.js:103
 msgid "Deleted successfully."
-msgstr ""
+msgstr "Ondo ezabatu da."
 
 #: static/js/admin/components/ItemDelete.js:51
 msgid "Delete"
-msgstr ""
+msgstr "Ezabatu"
 
 #: static/js/admin/components/LanguageForm.js:58
 #: static/js/admin/components/ProjectForm.js:61
 msgid "Code"
-msgstr ""
+msgstr "Kodea"
 
 #: static/js/admin/components/LanguageForm.js:64
 #: static/js/admin/components/ProjectForm.js:67
-#: static/js/admin/components/UserForm.js:89 static/js/user/forms.jsx:73
+#: static/js/admin/components/UserForm.js:89 static/js/user/forms.jsx:75
 msgid "Full Name"
-msgstr ""
+msgstr "Izen osoa"
 
 #: static/js/admin/components/LanguageForm.js:70
 msgid "Special Characters"
-msgstr ""
+msgstr "Karaktere bereziak"
 
 #: static/js/admin/components/LanguageForm.js:79
 msgid "Number of Plurals"
-msgstr ""
+msgstr "Plural kopurua"
 
 #: static/js/admin/components/LanguageForm.js:85
 msgid "Plural Equation"
-msgstr ""
+msgstr "Plural-ekuazioa"
 
 #: static/js/admin/components/LanguageForm.js:95
 #: static/js/admin/components/ProjectForm.js:137
-#: static/js/admin/components/UserForm.js:144 static/js/user/forms.jsx:120
+#: static/js/admin/components/UserForm.js:144 static/js/user/forms.jsx:121
 msgid "Save"
-msgstr ""
+msgstr "Gorde"
 
 #: static/js/admin/components/LanguageForm.js:98
 #: static/js/admin/components/ProjectForm.js:140
 msgid "Overview"
-msgstr ""
+msgstr "Ikuspegi orokorra"
 
 #: static/js/admin/components/LanguageForm.js:99
 #: static/js/admin/components/ProjectForm.js:142
 msgid "Permissions"
-msgstr ""
+msgstr "Baimenak"
 
 #: static/js/admin/components/ProjectForm.js:76
 msgid "Quality Checks"
-msgstr ""
+msgstr "Kalitate-egiaztapenak"
 
 #: static/js/admin/components/ProjectForm.js:85
 msgid "File Type"
-msgstr ""
+msgstr "Fitxategi mota"
 
 #: static/js/admin/components/ProjectForm.js:94
 msgid "Project Tree Style"
-msgstr ""
+msgstr "Proiektuaren zuhaitz-estiloa"
 
 #: static/js/admin/components/ProjectForm.js:103
-#, fuzzy
 msgid "Source Language"
-msgstr "Hizkuntza guztiak"
+msgstr "Iturburu hizkuntza"
 
 #: static/js/admin/components/ProjectForm.js:109
 msgid "Ignore Files"
-msgstr ""
+msgstr "Ezikusi fitxategiak"
 
 #: static/js/admin/components/ProjectForm.js:116
 msgid "String Errors Contact"
-msgstr ""
+msgstr "Kateen arazoetarako kontaktua"
 
 #: static/js/admin/components/ProjectForm.js:122
 msgid "Screenshot Search Prefix"
-msgstr ""
+msgstr "Pantaila-argazkien bilaketa-aurrizkia"
 
 #: static/js/admin/components/ProjectForm.js:129
 msgid "Disabled"
-msgstr ""
+msgstr "Desgaituta"
 
 #: static/js/admin/components/ProjectForm.js:141
 msgid "Languages"
-msgstr ""
+msgstr "Hizkuntzak"
 
 #: static/js/admin/components/Search.js:66
 msgid "Load More"
-msgstr ""
+msgstr "Kargatu gehiago"
 
 #: static/js/admin/components/Search.js:89
 msgid "Loading..."
-msgstr ""
+msgstr "Kargatzen..."
 
 #: static/js/admin/components/UserForm.js:52
+#, fuzzy
 msgid ""
-"Note: deleting the user will make its suggestions and translations become "
-"attributed to an anonymous user (nobody)."
+"Note: when deleting a user their contributions to the site, eg comments, "
+"suggestions and translations, are attributed to the anonymous user (nobody)."
 msgstr ""
+"Oharra: erabiltzailea ezabatzerakoan, bere gomendioak eta itzulpenak "
+"erabiltzaile anonimoari esleituko zaizkio (nobody)."
 
 #: static/js/admin/components/UserForm.js:64
 #: static/js/auth/components/SignInForm.js:95
 #: static/js/auth/components/SignUpForm.js:84
 msgid "Username"
-msgstr ""
+msgstr "Erabiltzaile-izena"
 
 #: static/js/admin/components/UserForm.js:73
 msgid "Active"
-msgstr ""
+msgstr "Aktibo"
 
 #: static/js/admin/components/UserForm.js:80
 #: static/js/auth/components/SignInForm.js:104
 #: static/js/auth/components/SignUpForm.js:100
 #: static/js/auth/components/SocialVerification.js:94
 msgid "Password"
-msgstr ""
+msgstr "Pasahitza"
 
 #: static/js/admin/components/UserForm.js:81
 msgid "Set a new password"
-msgstr ""
+msgstr "Ezarri pasahitz berria"
 
 #: static/js/admin/components/UserForm.js:95
 #: static/js/auth/components/SignUpForm.js:92
 msgid "Email"
-msgstr ""
+msgstr "Helbide elektronikoa"
 
 #: static/js/admin/components/UserForm.js:104
 msgid "Administrator"
-msgstr ""
+msgstr "Administratzailea"
 
-#: static/js/admin/components/UserForm.js:111 static/js/user/forms.jsx:88
+#: static/js/admin/components/UserForm.js:111 static/js/user/forms.jsx:89
 msgid "Twitter"
-msgstr ""
+msgstr "Twitter"
 
 #: static/js/admin/components/UserForm.js:113
 msgid "Twitter username"
-msgstr ""
+msgstr "Twitter erabiltzaile-izena"
 
-#: static/js/admin/components/UserForm.js:119 static/js/user/forms.jsx:95
+#: static/js/admin/components/UserForm.js:119 static/js/user/forms.jsx:96
 msgid "LinkedIn"
-msgstr ""
+msgstr "LinkedIn"
 
 #: static/js/admin/components/UserForm.js:121
 msgid "LinkedIn profile URL"
-msgstr ""
+msgstr "LinkedIn profilaren URLa"
 
-#: static/js/admin/components/UserForm.js:126 static/js/user/forms.jsx:101
+#: static/js/admin/components/UserForm.js:126 static/js/user/forms.jsx:102
 msgid "Website"
-msgstr ""
+msgstr "Webgunea"
 
 #: static/js/admin/components/UserForm.js:128
 msgid "Personal website URL"
-msgstr ""
+msgstr "Webgune pertsonalaren URLa"
 
-#: static/js/admin/components/UserForm.js:134 static/js/user/forms.jsx:108
+#: static/js/admin/components/UserForm.js:134 static/js/user/forms.jsx:109
 msgid "Short Bio"
-msgstr ""
+msgstr "Biografia motza"
 
 #: static/js/admin/components/UserForm.js:136
 msgid "Personal description"
-msgstr ""
+msgstr "Deskribapen pertsonala"
 
 #: static/js/admin/components/UserForm.js:147
 msgid "Public Profile"
-msgstr ""
+msgstr "Profil publikoa"
 
 #: static/js/admin/components/UserForm.js:148
 msgid "Settings"
-msgstr ""
+msgstr "Ezarpenak"
 
 #: static/js/admin/components/UserForm.js:149
 msgid "Statistics"
-msgstr ""
+msgstr "Estatistikak"
 
 #: static/js/admin/components/UserForm.js:150
 msgid "Reports"
-msgstr ""
+msgstr "Txostenak"
 
 #: static/js/auth/components/AccountActivation.js:33
-#, javascript-format
-msgid "We have sent an email containing the special link to <span>%s</span>."
+#, fuzzy, javascript-format
+msgid "We have sent an email containing the special link to <span>%s</span>"
 msgstr ""
+"Esteka berezia daukan mezu elektroniko bat bidali dugu <span>%s</span> "
+"helbidera."
 
 #: static/js/auth/components/AccountActivation.js:38
 msgid ""
 "We have sent an email containing the special link to the address used to "
 "register this account."
 msgstr ""
+"Esteka berezia daukan mezu elektroniko bat bidali dugu kontu hau "
+"erregistratzeko erabilitako helbidera."
 
 #: static/js/auth/components/AccountActivation.js:42
 msgid "Your account needs activation."
-msgstr ""
+msgstr "Zure kontua aktibatu egin behar da."
 
 #: static/js/auth/components/AccountActivation.js:43
 msgid "Please follow that link to continue the account creation."
 msgstr ""
+"Mesedez egin klik esteka horretan kontua sortzeko prozesuarekin jarraitzeko."
 
-#: static/js/auth/components/AccountActivation.js:56
+#: static/js/auth/components/AccountActivation.js:57
 #: static/js/auth/components/AccountInactive.js:36
+#: static/js/auth/components/EmailConfirmation.js:36
 msgid "Close"
-msgstr ""
+msgstr "Itxi"
 
 #: static/js/auth/components/AccountInactive.js:30
 msgid "Your account is inactive because an administrator deactivated it."
-msgstr ""
+msgstr "Zure kontua desaktibatuta dago kudeatzaile batek desaktibatu duelako."
 
-#: static/js/auth/components/AuthController.js:82
+#: static/js/auth/components/AuthController.js:83
 msgid "Sign In With..."
-msgstr ""
+msgstr "Hasi saioa honekin..."
 
-#: static/js/auth/components/AuthController.js:82
+#: static/js/auth/components/AuthController.js:83
 #: static/js/auth/components/SignInForm.js:122
 #: static/js/auth/components/SocialVerification.js:112
 msgid "Sign In"
-msgstr ""
+msgstr "Hasi saioa"
 
-#: static/js/auth/components/AuthController.js:89
+#: static/js/auth/components/AuthController.js:90
 msgid "Account Inactive"
-msgstr ""
+msgstr "Kontua inaktibo"
 
-#: static/js/auth/components/AuthController.js:96
+#: static/js/auth/components/AuthController.js:97
 #: static/js/auth/components/SignUpForm.js:121
 msgid "Sign Up"
-msgstr ""
+msgstr "Eman izena"
 
-#: static/js/auth/components/AuthController.js:103
-#: static/js/auth/components/AuthController.js:110
+#: static/js/auth/components/AuthController.js:104
 msgid "Account Activation"
+msgstr "Kontuaren aktibazioa"
+
+#: static/js/auth/components/AuthController.js:111
+msgid "Email Confirmation"
 msgstr ""
 
-#: static/js/auth/components/AuthController.js:117
-#: static/js/auth/components/AuthController.js:124
-#: static/js/auth/components/AuthController.js:131
+#: static/js/auth/components/AuthController.js:118
+#: static/js/auth/components/AuthController.js:125
+#: static/js/auth/components/AuthController.js:132
 msgid "Reset Your Password"
-msgstr ""
+msgstr "Berrezarri pasahitza"
 
-#: static/js/auth/components/AuthController.js:138
+#: static/js/auth/components/AuthController.js:139
 msgid "Oops..."
-msgstr ""
+msgstr "Ene..."
 
-#: static/js/auth/components/AuthController.js:145
+#: static/js/auth/components/AuthController.js:146
 msgid "Social Verification"
-msgstr ""
+msgstr "Egiaztapen soziala"
 
 #: static/js/auth/components/AuthWindow.js:21
 msgid "Contact Us"
+msgstr "Kontaktua"
+
+#: static/js/auth/components/EmailConfirmation.js:30
+msgid "This email confirmation link expired or is invalid."
 msgstr ""
 
 #: static/js/auth/components/PasswordResetForm.js:80
@@ -275,243 +290,272 @@ msgid ""
 "The password reset link was invalid, possibly because it has already been "
 "used. Please request a new password reset."
 msgstr ""
+"Pasahitza berrezartzeko esteka ez da baliozkoa, agian jadanik erabili "
+"delako. Eskatu berriro pasahitza berrezartzea."
 
 #: static/js/auth/components/PasswordResetForm.js:86
 msgid "Reset Password"
-msgstr ""
+msgstr "Berrezarri pasahitza"
 
 #: static/js/auth/components/PasswordResetForm.js:98
 msgid "Password changed, signing in..."
-msgstr ""
+msgstr "Pasahitza aldatuta, saioa hasten..."
 
 #: static/js/auth/components/PasswordResetForm.js:122
 #: static/js/auth/components/SignUpForm.js:108
 msgid "Repeat Password"
-msgstr ""
+msgstr "Errepikatu pasahitza"
 
 #: static/js/auth/components/PasswordResetForm.js:135
 msgid "Set New Password"
-msgstr ""
+msgstr "Ezarri pasahitz berria"
 
 #: static/js/auth/components/PasswordResetForm.js:139
 msgid "After changing your password you will sign in automatically."
-msgstr ""
+msgstr "Pasahitza aldatu ondoren saioa hasiko duzu automatikoki."
 
 #: static/js/auth/components/RequestPasswordResetProgress.js:25
 #, javascript-format
 msgid "Sending email to %s..."
-msgstr ""
+msgstr "Mezua %s helbidera bidaltzen..."
 
 #: static/js/auth/components/RequestPasswordResetSent.js:47
 msgid "Please follow that link to continue the password reset procedure."
 msgstr ""
+"Jarraitu esteka hori pasahitza berrezartzeko prozesuarekin jarraitzeko."
 
 #: static/js/auth/components/RequestPasswordResetSent.js:48
 msgid ""
 "Didn't receive an email? Check if it was accidentally filtered out as spam, "
 "or try requesting another copy of the email."
 msgstr ""
+"Ez duzu mezurik jaso? Egiaztatu spam karpetan dagoen edo saiatu mezuaren "
+"kopia bat eskatzen."
 
 #: static/js/auth/components/RequestPasswordResetSent.js:62
 msgid "Resend Email"
-msgstr ""
+msgstr "Birbidali mezua"
 
 #: static/js/auth/components/SignInForm.js:83
 msgid "Sign up as a new user"
-msgstr ""
+msgstr "Eman izena erabiltzaile berri gisa"
 
 #: static/js/auth/components/SignInForm.js:111
 #: static/js/auth/components/SocialVerification.js:101
 msgid "I forgot my password"
-msgstr ""
+msgstr "Pasahitza ahaztu dut"
 
 #: static/js/auth/components/SignInPanel.js:49
 #: static/js/auth/components/SocialVerification.js:72
 msgid "Signed in. Redirecting..."
-msgstr ""
+msgstr "Saioa hasita. Berbideratzen..."
 
 #: static/js/auth/components/SignInPanel.js:62
 msgid "Social Services"
-msgstr ""
+msgstr "Zerbitzu sozialak"
 
 #: static/js/auth/components/SignInPanel.js:65
 msgid "Login / Password"
-msgstr ""
+msgstr "Erabiltzailea / pasahitza"
 
 #: static/js/auth/components/SignUpForm.js:126
 msgid "Sign in as an existing user"
-msgstr ""
+msgstr "Hasi saioa badagoen erabiltzaile gisa"
 
 #: static/js/auth/components/SocialAuthError.js:31
 #, javascript-format
 msgid "An error occurred while attempting to sign in via %s."
-msgstr ""
+msgstr "Errorea gertatu da %s bidez saioa hasten saiatzean."
 
 #: static/js/auth/components/SocialAuthError.js:35
 msgid "An error occurred while attempting to sign in via your social account."
-msgstr ""
+msgstr "Errorea gertatu da zure kontu sozialarekin saioa hasten saiatzean."
 
 #: static/js/auth/components/SocialAuthError.js:51
 msgid "Try again"
-msgstr ""
+msgstr "Saiatu berriro"
 
 #: static/js/auth/components/SocialSignInForm.js:40
 #, javascript-format
 msgid "Sign In With %s"
-msgstr ""
+msgstr "Hasi saioa %s erabiliz"
 
 #: static/js/auth/components/SocialSignInForm.js:46
 msgid ""
 "Signing in with an external service for the first time will automatically "
 "create an account for you."
 msgstr ""
+"Lehenengo aldiz kanpo-zerbitzu batekin saioa hastean, automatikoki kontu bat "
+"sortuko da zuretzat."
 
-#: static/js/browser.js:156
-msgid "All Languages"
-msgstr "Hizkuntza guztiak"
-
-#: static/js/browser.js:159
-msgid "All Projects"
-msgstr "Proiektu guztiak"
-
-#: static/js/browser.js:162
-msgid "Entire Project"
+#: static/js/editor/app.js:241 static/js/editor/app.js:537
+msgid ""
+"You have unsaved changes in this unit. Navigating away will discard those "
+"changes."
 msgstr ""
 
-#: static/js/editor/app.js:243
+#: static/js/editor/app.js:267
 msgid ""
 "Go to the next string (Ctrl+.)<br/><br/>Also:<br/>Next page: Ctrl+Shift+.<br/"
 ">Last page: Ctrl+Shift+End"
 msgstr ""
+"Joan hurrengo katera (Ktrl+.)<br/><br/>Baita ere:<br/>Hurrengo orria: Ktrl"
+"+Shift+.<br/>Azken orria: Ktrl+Shift+Amaitu"
 
-#: static/js/editor/app.js:247
+#: static/js/editor/app.js:271
 msgid ""
 "Go to the previous string (Ctrl+,)<br/><br/>Also:</br>Previous page: Ctrl"
 "+Shift+,<br/>First page: Ctrl+Shift+Home"
 msgstr ""
+"Joan aurreko katera (Ktrl+,)<br/><br/>Baita ere:<br/>Aurreko orria: Ktrl"
+"+Shift+,<br/>Lehen orria: Ktrl+Shift+Hasi"
 
-#: static/js/editor/app.js:359
+#: static/js/editor/app.js:383
 #, javascript-format
 msgid "%s's pending suggestions"
 msgstr "%s erabiltzaileak zain dituen gomendioak"
 
-#: static/js/editor/app.js:362
+#: static/js/editor/app.js:386
 #, javascript-format
 msgid "%s's accepted suggestions"
 msgstr "%s erabiltzaileari onartutako gomendioak"
 
-#: static/js/editor/app.js:365
+#: static/js/editor/app.js:389
 #, javascript-format
 msgid "%s's rejected suggestions"
 msgstr "%s erabiltzaileari baztertutako gomendioak"
 
-#: static/js/editor/app.js:368
+#: static/js/editor/app.js:392
 #, javascript-format
 msgid "%s's submissions"
 msgstr "%s erabiltzailearen bidalketak"
 
-#: static/js/editor/app.js:372
+#: static/js/editor/app.js:396
 #, javascript-format
 msgid "%s's overwritten submissions"
 msgstr "%s erabiltzaileari gainidatzitako bidalketak"
 
-#: static/js/editor/app.js:501 static/js/editor/app.js:1650
+#: static/js/editor/app.js:529 static/js/editor/app.js:1740
 msgid "No results."
 msgstr "Emaitzarik ez."
 
-#: static/js/editor/app.js:960
+#: static/js/editor/app.js:1042
 msgid "Error while connecting to the server"
 msgstr "Errorea zerbitzariarekin konektatzerakoan"
 
-#: static/js/editor/app.js:964
+#: static/js/editor/app.js:1046
 msgid "Not found"
-msgstr ""
+msgstr "Ez da aurkitu"
 
-#: static/js/editor/app.js:966
+#: static/js/editor/app.js:1048
 msgid "Server error"
 msgstr "Zerbitzariaren errorea"
 
-#: static/js/editor/app.js:968
+#: static/js/editor/app.js:1050
 msgid "The server seems down. Try again later."
 msgstr "Zerbitzariak lineaz kanpo dirudi. Saiatu berriro beranduago."
 
-#: static/js/editor/app.js:975
+#: static/js/editor/app.js:1057
 msgid "Unknown error"
 msgstr "Errore ezezaguna"
 
-#: static/js/editor/app.js:983
+#: static/js/editor/app.js:1065
 msgid "This unit no longer exists."
-msgstr ""
+msgstr "Unitate hau ez dago jada."
 
-#: static/js/editor/app.js:984
+#: static/js/editor/app.js:1066
 msgid "Go back to browsing"
-msgstr ""
+msgstr "Itzuli nabigaziora"
 
-#: static/js/editor/app.js:986
+#: static/js/editor/app.js:1068
 msgid "Reload page"
-msgstr ""
+msgstr "Berritu orria"
 
-#: static/js/editor/app.js:1986
+#: static/js/editor/app.js:2094
 msgid "some anonymous user"
-msgstr ""
+msgstr "erabiltzaile anonimoa"
 
-#: static/js/editor/app.js:1988
+#: static/js/editor/app.js:2096
 msgid "someone"
-msgstr ""
+msgstr "norbait"
 
-#: static/js/editor/app.js:2005 static/js/editor/app.js:2054
+#: static/js/editor/app.js:2114 static/js/editor/app.js:2163
 msgid "Similar translations"
 msgstr "Antzeko itzulpenak"
 
 #: static/js/shared/models/project.js:59
 msgid "disabled"
-msgstr ""
+msgstr "desgaituta"
 
-#: static/js/stats.js:286
+#: static/js/stats.js:349
 #, javascript-format
 msgid "%s second"
 msgid_plural "%s seconds"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Segundo %s"
+msgstr[1] "%s segundo"
 
-#: static/js/stats.js:318
-msgid "Expand details"
-msgstr "Zabaldu xehetasunak"
-
-#: static/js/stats.js:318
+#: static/js/stats.js:393
 msgid "Collapse details"
 msgstr "Tolestu xehetasunak"
 
+#: static/js/stats.js:393
+msgid "Expand details"
+msgstr "Zabaldu xehetasunak"
+
+#: static/js/user/components/UserProfileEdit.js:106
+msgid "Edit My Public Profile"
+msgstr "Editatu nire profil publikoa"
+
+#: static/js/user/components/UserProfileEdit.js:113
+msgid "My Public Profile"
+msgstr "Nire profil publikoa"
+
+#: static/js/user/components/UserProfileEdit.js:125
+msgid "Discard changes."
+msgstr "Baztertu aldaketak."
+
+#: static/js/user/components/UserProfileEdit.js:126
+msgid "Yes"
+msgstr "Bai"
+
+#: static/js/user/components/UserProfileEdit.js:127
+msgid "No"
+msgstr "Ez"
+
+#: static/js/user/components/UserProfileEdit.js:128
+msgid "There are unsaved changes. Do you want to discard them?"
+msgstr "Gorde gabeko aldaketak daude. Baztertu egin nahi dituzu?"
+
 #: static/js/utils.js:151
-#, fuzzy, javascript-format
+#, javascript-format
 msgid "A year ago"
 msgid_plural "%s years ago"
 msgstr[0] "Duela urtebete"
 msgstr[1] "Duela %s urte"
 
 #: static/js/utils.js:154
-#, fuzzy, javascript-format
+#, javascript-format
 msgid "A week ago"
 msgid_plural "%s weeks ago"
 msgstr[0] "Duela astebete"
 msgstr[1] "Duela %s aste"
 
 #: static/js/utils.js:157
-#, fuzzy, javascript-format
+#, javascript-format
 msgid "Yesterday"
 msgid_plural "%s days ago"
 msgstr[0] "Atzo"
 msgstr[1] "Duela %s egun"
 
 #: static/js/utils.js:160
-#, fuzzy, javascript-format
+#, javascript-format
 msgid "An hour ago"
 msgid_plural "%s hours ago"
 msgstr[0] "Duela ordubete"
 msgstr[1] "Duela %s ordu"
 
 #: static/js/utils.js:163
-#, fuzzy, javascript-format
+#, javascript-format
 msgid "A minute ago"
 msgid_plural "%s minutes ago"
 msgstr[0] "Duela minutu bat"
@@ -525,90 +569,92 @@ msgstr "Duela segundo batzuk"
 #, python-format
 msgid "%(count)s language matches your query."
 msgid_plural "%(count)s languages match your query."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Hizkuntza bat dator bat zure bilaketarekin."
+msgstr[1] "%(count)s hizkuntza datoz bat zure bilaketarekin."
 
 #: static/js/admin/components/language.jsx:56
 #, python-format
 msgid "There is %(count)s language."
 msgid_plural ""
 "There are %(count)s languages. Below are the most recently added ones."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Hizkuntza bakarra dago."
+msgstr[1] "%(count)s hizkuntza daude. Azpian daude gehitutako azkenak."
 
 #: static/js/admin/components/language.jsx:74
 msgid "Search Languages"
-msgstr ""
+msgstr "Bilatu hizkuntzak"
 
 #: static/js/admin/components/language.jsx:75
 msgid "Find language by name, code"
-msgstr ""
+msgstr "Bilatu hizkuntza izenaren edo kodearen arabera"
 
 #: static/js/admin/components/language.jsx:103
 #: static/js/admin/components/language.jsx:138
-#, fuzzy
 msgid "Add Language"
-msgstr "Hizkuntza guztiak"
+msgstr "Gehitu hizkuntza"
 
 #: static/js/admin/components/language.jsx:106
 #: static/js/admin/components/project.jsx:106
 #: static/js/admin/components/user.jsx:106
 msgid "Cancel"
-msgstr ""
+msgstr "Utzi"
 
 #: static/js/admin/components/language.jsx:135
 msgid "Edit Language"
-msgstr ""
+msgstr "Editatu hizkuntza"
 
 #: static/js/admin/components/language.jsx:142
 msgid ""
 "Use the search form to find the language, then click on a language to edit."
 msgstr ""
+"Erabili bilaketa-inprimakia hizkuntza bilatzeko; editatzeko, egin klik "
+"hizkuntzan."
 
 #: static/js/admin/components/project.jsx:52
 #, python-format
 msgid "%(count)s project matches your query."
 msgid_plural "%(count)s projects match your query."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Proiektu bat dator bat zure bilaketarekin."
+msgstr[1] "%(count)s proiektu datoz bat zure bilaketarekin."
 
 #: static/js/admin/components/project.jsx:56
 #, python-format
 msgid "There is %(count)s project."
 msgid_plural ""
 "There are %(count)s projects. Below are the most recently added ones."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Proiektu bat dago."
+msgstr[1] "%(count)s proiektu daude. Azpian daude gehitutako azkenak."
 
 #: static/js/admin/components/project.jsx:74
 msgid "Search Projects"
-msgstr ""
+msgstr "Bilatu proiektuak"
 
 #: static/js/admin/components/project.jsx:75
 msgid "Find project by name, code"
-msgstr ""
+msgstr "BIlatu proiektuak izenez, kodez"
 
 #: static/js/admin/components/project.jsx:103
 #: static/js/admin/components/project.jsx:138
-#, fuzzy
 msgid "Add Project"
-msgstr "Proiektu guztiak"
+msgstr "Gehitu proiektua"
 
 #: static/js/admin/components/project.jsx:135
 msgid "Edit Project"
-msgstr ""
+msgstr "Editatu proiektua"
 
 #: static/js/admin/components/project.jsx:142
 msgid ""
 "Use the search form to find the project, then click on a project to edit."
 msgstr ""
+"Erabili bilaketa-inprimakia proiektua bilatzeko; editatzeko, egin klik "
+"proiektuan."
 
 #: static/js/admin/components/user.jsx:52
 #, python-format
 msgid "%(count)s user matches your query."
 msgid_plural "%(count)s users match your query."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Erabiltzaile bat dator bat zure bilaketarekin."
+msgstr[1] "%(count)s erabiltzaile datoz bat zure bilaketarekin."
 
 #: static/js/admin/components/user.jsx:56
 #, python-format
@@ -620,141 +666,127 @@ msgstr[1] ""
 
 #: static/js/admin/components/user.jsx:74
 msgid "Search Users"
-msgstr ""
+msgstr "Bilatu erabiltzaileak"
 
 #: static/js/admin/components/user.jsx:75
 msgid "Find user by name, email, properties"
-msgstr ""
+msgstr "Bilatu erabiltzailea izenez, helbide elektronikoz, propietateez"
 
 #: static/js/admin/components/user.jsx:103
 #: static/js/admin/components/user.jsx:138
 msgid "Add User"
-msgstr ""
+msgstr "Gehitu erabiltzailea"
 
 #: static/js/admin/components/user.jsx:135
 msgid "Edit User"
-msgstr ""
+msgstr "Editatu erabiltzailea"
 
 #: static/js/admin/components/user.jsx:142
 msgid "Use the search form to find the user, then click on a user to edit."
 msgstr ""
+"Erabili bilaketa-inprimakia erabiltzailea bilatzeko; editatzeko, egin klik "
+"erabiltzailean."
 
 #: static/js/shared/components/forms.jsx:69
 msgid "Select..."
-msgstr ""
+msgstr "Hautatu..."
 
 #: static/js/shared/components/forms.jsx:70
 msgid "No results found"
-msgstr ""
+msgstr "Ez da emaitzarik aurkitu"
 
 #: static/js/shared/components/forms.jsx:71
 msgid "Clear value"
-msgstr ""
+msgstr "Garbitu balioa"
 
 #: static/js/shared/components/forms.jsx:72
 msgid "Clear all"
-msgstr ""
+msgstr "Garbitu dena"
 
 #: static/js/shared/components/forms.jsx:73
 msgid "Type to search"
-msgstr ""
+msgstr "Idatzi bilatzeko"
 
-#: static/js/user/components/edit.jsx:106
-msgid "Edit My Public Profile"
-msgstr ""
-
-#: static/js/user/components/edit.jsx:113
-msgid "My Public Profile"
-msgstr ""
-
-#: static/js/user/components/edit.jsx:125
-msgid "Discard changes."
-msgstr ""
-
-#: static/js/user/components/edit.jsx:126
-msgid "Yes"
-msgstr ""
-
-#: static/js/user/components/edit.jsx:127
-msgid "No"
-msgstr ""
-
-#: static/js/user/components/edit.jsx:128
-msgid "There are unsaved changes. Do you want to discard them?"
-msgstr ""
-
-#: static/js/user/forms.jsx:61
+#: static/js/user/forms.jsx:63
 #, python-format
 msgid ""
 "To set or change your avatar for your email address (%(email)s), please go "
 "to gravatar.com."
 msgstr ""
 
-#: static/js/user/forms.jsx:74
+#: static/js/user/forms.jsx:76
 msgid "Your Full Name"
-msgstr ""
+msgstr "Zure izen osoa"
 
-#: static/js/user/forms.jsx:80
+#: static/js/user/forms.jsx:82
 msgid "Avatar"
-msgstr ""
+msgstr "Abatarra"
 
-#: static/js/user/forms.jsx:90
+#: static/js/user/forms.jsx:91
 msgid "Your Twitter username"
-msgstr ""
+msgstr "Zure Twitter erabiltzaile-izena"
 
-#: static/js/user/forms.jsx:97
+#: static/js/user/forms.jsx:98
 msgid "Your LinkedIn profile URL"
-msgstr ""
+msgstr "Zure LinkedIn profilaren URLa"
 
-#: static/js/user/forms.jsx:103
+#: static/js/user/forms.jsx:104
 msgid "Your Personal website/blog URL"
-msgstr ""
+msgstr "Zure webgune/blogaren URLa"
 
-#: static/js/user/forms.jsx:111
+#: static/js/user/forms.jsx:112
 msgid ""
 "Why are you part of our translation project? Describe yourself, inspire "
 "others!"
 msgstr ""
+"Zergatik hartzen duzu parte gure itzulpen-proiektuan? Azaldu nor zaren, "
+"inspiratu besteak!"
 
 #: templates/admin/xhr_language_user_activity.html:6
 msgid "Project / Language"
-msgstr ""
+msgstr "Proiektua / hizkuntza"
 
 #: templates/admin/xhr_language_user_activity.html:7
-msgid "Translated"
+msgid "Suggested"
 msgstr ""
 
 #: templates/admin/xhr_language_user_activity.html:8
-msgid "Reviewed"
-msgstr ""
+msgid "Translated"
+msgstr "Itzulita"
 
 #: templates/admin/xhr_language_user_activity.html:9
+msgid "Reviewed"
+msgstr "Gainbegiratuta"
+
+#: templates/admin/xhr_language_user_activity.html:10
 msgid "Score Change"
-msgstr ""
+msgstr "Puntuazio-aldaketa"
 
-#: templates/admin/xhr_language_user_activity.html:16
-#: templates/admin/xhr_language_user_activity.html:17
-#: templates/admin/xhr_language_user_activity.html:23
+#: templates/admin/xhr_language_user_activity.html:20
 #: templates/admin/xhr_language_user_activity.html:24
-#: templates/admin/xhr_paid_tasks_report.html:24
-#: templates/admin/xhr_summary_report.html:21
-#: templates/admin/xhr_summary_report.html:35
-msgid "word"
-msgid_plural "words"
-msgstr[0] ""
-msgstr[1] ""
+#: templates/admin/xhr_language_user_activity.html:31
+#: templates/admin/xhr_language_user_activity.html:35
+#: templates/admin/xhr_language_user_activity.html:40
+#: templates/admin/xhr_language_user_activity.html:51
+#: templates/admin/xhr_language_user_activity.html:55
+#: templates/admin/xhr_language_user_activity.html:59
+#, fuzzy, python-format
+msgid "%s word"
+msgid_plural "%s words"
+msgstr[0] "Pasahitza"
+msgstr[1] "Pasahitza"
 
-#: templates/admin/xhr_language_user_activity.html:30
+#: templates/admin/xhr_language_user_activity.html:69
 msgid "No activity recorded in a given period"
-msgstr ""
+msgstr "Ez da jarduerarik erregistratu periodo honetan"
 
-#: templates/admin/xhr_language_user_activity.html:33
+#: templates/admin/xhr_language_user_activity.html:72
 msgid "Please select a valid user."
-msgstr ""
+msgstr "Hautatu baliozko erabiltzailea."
 
 #: templates/admin/xhr_paid_tasks_report.html:3
 msgid "Registered Tasks"
-msgstr ""
+msgstr "Erregistratutako atazak"
 
 #: templates/admin/xhr_paid_tasks_report.html:7
 msgid "Datetime"
@@ -762,22 +794,22 @@ msgstr ""
 
 #: templates/admin/xhr_paid_tasks_report.html:8
 msgid "Comment"
-msgstr ""
+msgstr "Iruzkina"
 
 #: templates/admin/xhr_paid_tasks_report.html:9
 #: templates/admin/xhr_summary_report.html:7
 msgid "Action"
-msgstr ""
+msgstr "Ekintza"
 
 #: templates/admin/xhr_paid_tasks_report.html:10
 #: templates/admin/xhr_summary_report.html:8
 msgid "Amount"
-msgstr ""
+msgstr "Kopurua"
 
 #: templates/admin/xhr_paid_tasks_report.html:11
 #: templates/admin/xhr_summary_report.html:9
 msgid "Rate"
-msgstr ""
+msgstr "Tasa"
 
 #: templates/admin/xhr_paid_tasks_report.html:12
 #: templates/admin/xhr_summary_report.html:10
@@ -788,6 +820,14 @@ msgstr ""
 #: templates/admin/xhr_summary_report.html:32
 msgid "hour"
 msgid_plural "hours"
+msgstr[0] ""
+msgstr[1] ""
+
+#: templates/admin/xhr_paid_tasks_report.html:24
+#: templates/admin/xhr_summary_report.html:21
+#: templates/admin/xhr_summary_report.html:35
+msgid "word"
+msgid_plural "words"
 msgstr[0] ""
 msgstr[1] ""
 
@@ -805,16 +845,16 @@ msgstr ""
 
 #: templates/admin/xhr_summary_report.html:6
 msgid "Period"
-msgstr ""
+msgstr "Periodoa"
 
 #: templates/admin/xhr_summary_report.html:41
 msgid "(registered tasks)"
-msgstr ""
+msgstr "(erregistratutako atazak)"
 
 #: templates/admin/xhr_summary_report.html:49
 #, python-format
 msgid "Total (%(currency)s)"
-msgstr ""
+msgstr "Guztira (%(currency)s)"
 
 #: templates/editor/units/xhr_edit_ctx.html:4
 msgid "More"
@@ -838,6 +878,15 @@ msgid ""
 "Translated by %(fullname)s in &ldquo;<span title=\"%(path)s\">%(project)s</"
 "span>&rdquo; project"
 msgstr ""
+
+#~ msgid "All Languages"
+#~ msgstr "Hizkuntza guztiak"
+
+#~ msgid "All Projects"
+#~ msgstr "Proiektu guztiak"
+
+#~ msgid "Entire Project"
+#~ msgstr "Proiektu guztia"
 
 #~ msgid "Are you sure you want to continue?"
 #~ msgstr "Ziur zaude jarraitu nahi duzula?"

@@ -19,6 +19,9 @@ POOTLE_TITLE = 'Pootle Development Server'
 
 POOTLE_INSTANCE_ID = 'development'
 
+# Some dummy secret key fine for dev
+SECRET_KEY = '__P00TL3d3vS3CR3T__'
+
 # General Django debugging settings
 
 # Enable Django debug mode
@@ -32,7 +35,11 @@ TEMPLATE_DEBUG = DEBUG
 # A list of strings representing the host/domain names that this Pootle server
 # can serve. This is a Django's security measure. More details at
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+ALLOWED_HOSTS = [
+    '127.0.0.1',
+    'localhost',
+    #'${your_server}',
+]
 
 
 #
@@ -43,7 +50,7 @@ ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 DATABASES = {
     'default': {
         # Although has issues with locking, SQLite is handy for development
-        'ENGINE': 'django.db.backends.sqlite3',
+        'ENGINE': 'transaction_hooks.backends.sqlite3',
         # Database name or path to database file if using sqlite3.
         'NAME': working_path('dbs/pootle.db'),
         # Not used with sqlite3.
@@ -193,7 +200,8 @@ AMAGAMA_URL = 'https://amagama-live.translatehouse.org/api/v1/'
 
 # Silence the DEBUG check on dev servers
 SILENCED_SYSTEM_CHECKS = [
-    'pootle.W005',
-    'pootle.W010',
-    'pootle.W011',
+    'pootle.W004', # python-levenstein not installed
+    'pootle.W005', # DEBUG = True
+    'pootle.W010', # DEFAULT_FROM_EMAIL has default setting
+    'pootle.W011', # POOTLE_CONTACT_EMAIL has default setting
 ]

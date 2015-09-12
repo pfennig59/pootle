@@ -7,28 +7,23 @@
 # or later license. See the LICENSE file for a copy of the license and the
 # AUTHORS file for copyright and authorship information.
 
-from translate.filters.decorators import Category
-
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.utils import dateformat
-from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 
 from pootle.core.markup import get_markup_filter_name, MarkupField
-from pootle.core.url_helpers import get_editor_filter, split_pootle_path
+from pootle.core.mixins import CachedMethods, CachedTreeItem
+from pootle.core.mixins.treeitem import NoCachedStats
+from pootle.core.url_helpers import (get_all_pootle_paths, get_editor_filter,
+                                     split_pootle_path)
 from pootle_app.models import Directory
 from pootle_language.models import Language
-from pootle_misc.checks import get_qualitychecks_by_category
 from pootle_project.models import Project
-from pootle_statistics.models import Submission
-from pootle_store.models import (QualityCheck, Store, Suggestion,
-                                 SuggestionStates, Unit)
-from pootle_store.util import (calc_total_wordcount, calc_translated_wordcount,
-                               calc_fuzzy_wordcount, OBSOLETE, UNTRANSLATED)
+from pootle_store.models import Store, Unit
+from pootle_store.util import OBSOLETE
 from .signals import vfolder_post_save
 
 
@@ -54,10 +49,10 @@ class VirtualFolder(models.Model):
         help_text=_('Number specifying importance. Greater priority means it '
                     'is more important.'),
     )
-    is_browsable = models.BooleanField(
-        _('Is browsable?'),
+    is_public = models.BooleanField(
+        _('Is public?'),
         default=True,
-        help_text=_('Whether this virtual folder is active or not.'),
+        help_text=_('Whether this virtual folder is public or not.'),
     )
     description = MarkupField(
         _('Description'),
@@ -73,7 +68,6 @@ class VirtualFolder(models.Model):
 
     class Meta:
         unique_together = ('name', 'location')
-        ordering = ['-priority', 'name']
 
     @property
     def tp_relative_path(self):
@@ -126,78 +120,6 @@ class VirtualFolder(models.Model):
 
         return [self.location]
 
-    @cached_property
-    def code(self):
-        return self.pk
-
-    @classmethod
-    def get_matching_for(cls, pootle_path):
-        """Return the matching virtual folders in the given pootle path.
-
-        Not all the applicable virtual folders have matching filtering rules.
-        This method further restricts the list of applicable virtual folders to
-        retrieve only those with filtering rules that actually match.
-        """
-        return VirtualFolder.objects.filter(
-            units__store__pootle_path__startswith=pootle_path
-        ).distinct()
-
-    @classmethod
-    def get_visible_for(cls, pootle_path):
-        """Return the visible virtual folders in the given pootle path.
-
-        Not all the applicable virtual folders have matching filtering rules.
-        This method further restricts the list of applicable virtual folders to
-        retrieve only those with filtering rules that actually match, and that
-        are visible.
-        """
-        return cls.get_matching_for(pootle_path).filter(is_browsable=True,
-                                                        priority__gte=1)
-
-    @classmethod
-    def get_stats_for(cls, pootle_path, all_vfolders=False):
-        """Get stats for all the virtual folders in the given path.
-
-        If ``all_vfolders`` is True then all virtual folders in the passed
-        pootle_path are returned, independently of their priority of
-        browsability.
-        """
-        stats = {}
-        if all_vfolders:
-            vfolders = cls.get_matching_for(pootle_path)
-        else:
-            vfolders = cls.get_visible_for(pootle_path)
-
-        for vf in vfolders:
-            units = vf.units.filter(store__pootle_path__startswith=pootle_path)
-            stores = Store.objects.filter(
-                pootle_path__startswith=pootle_path,
-                unit__vfolders=vf
-            ).distinct()
-
-            stats[vf.code] = {
-                'total': calc_total_wordcount(units),
-                'translated': calc_translated_wordcount(units),
-                'fuzzy': calc_fuzzy_wordcount(units),
-                'suggestions': Suggestion.objects.filter(
-                    unit__vfolders=vf,
-                    unit__store__pootle_path__startswith=pootle_path,
-                    unit__state__gt=OBSOLETE,
-                    state=SuggestionStates.PENDING,
-                ).count(),
-                'critical': QualityCheck.objects.filter(
-                    unit__vfolders=vf,
-                    unit__store__pootle_path__startswith=pootle_path,
-                    unit__state__gt=UNTRANSLATED,
-                    category=Category.CRITICAL,
-                    false_positive=False,
-                ).values('unit').distinct().count(),
-                'lastaction': vf.get_last_action_for(pootle_path),
-                'is_dirty': any(map(lambda x: x.is_dirty(), stores)),
-            }
-
-        return stats
-
     def __unicode__(self):
         return ": ".join([self.name, self.location])
 
@@ -222,25 +144,45 @@ class VirtualFolder(models.Model):
         self.units.clear()
 
         # Recreate relationships between this vfolder and units.
-        if self.filter_rules:
-            for location in self.all_locations:
-                for filename in self.filter_rules.split(","):
-                    vf_file = "".join([location, filename])
+        vfolder_stores_set = set()
 
-                    qs = Store.objects.live().filter(pootle_path=vf_file)
+        for location in self.all_locations:
+            for filename in self.filter_rules.split(","):
+                vf_file = "".join([location, filename])
 
-                    if qs.exists():
-                        self.units.add(*qs[0].units.all())
-                    else:
-                        if not vf_file.endswith("/"):
-                            vf_file += "/"
+                qs = Store.objects.live().filter(pootle_path=vf_file)
 
-                        if Directory.objects.filter(pootle_path=vf_file).exists():
-                            qs = Unit.objects.filter(
-                                state__gt=OBSOLETE,
-                                store__pootle_path__startswith=vf_file
-                            )
-                            self.units.add(*qs)
+                if qs.exists():
+                    self.units.add(*qs[0].units.all())
+                    vfolder_stores_set.add(qs[0])
+                else:
+                    if not vf_file.endswith("/"):
+                        vf_file += "/"
+
+                    if Directory.objects.filter(pootle_path=vf_file).exists():
+                        qs = Unit.objects.filter(
+                            state__gt=OBSOLETE,
+                            store__pootle_path__startswith=vf_file
+                        )
+                        self.units.add(*qs)
+                        vfolder_stores_set.update(Store.objects.filter(
+                            pootle_path__startswith=vf_file
+                        ))
+
+        # For each store create all VirtualFolderTreeItem tree structure up to
+        # its adjusted vfolder location.
+        for store in vfolder_stores_set:
+            try:
+                VirtualFolderTreeItem.objects.get_or_create(
+                    directory=store.parent,
+                    vfolder=self,
+                )
+            except ValidationError:
+                # If there is some problem, e.g. a clash with a directory,
+                # delete the virtual folder and all its related items, and
+                # reraise the exception.
+                self.delete()
+                raise
 
         # Get the set of projects whose resources cache must be invalidated.
         # This includes the projects the projects it was previously related to
@@ -265,6 +207,9 @@ class VirtualFolder(models.Model):
         elif self.location.startswith("/projects/"):
             raise ValidationError(u'Locations starting with "/projects/" are '
                                   u'not allowed. Use "/{LANG}/" instead.')
+
+        if not self.filter_rules:
+            raise ValidationError(u'Some filtering rule must be specified.')
 
     def get_adjusted_location(self, pootle_path):
         """Return the virtual folder location adjusted to the given path.
@@ -296,21 +241,6 @@ class VirtualFolder(models.Model):
             pass
 
         return "/".join(pootle_path.split("/")[:count])
-
-    def get_last_action_for(self, pootle_path):
-        try:
-            sub = Submission.simple_objects.filter(
-                unit__vfolders=self,
-                unit__store__pootle_path__startswith=pootle_path,
-            ).latest()
-        except Submission.DoesNotExist:
-            return {'id': 0, 'mtime': 0, 'snippet': ''}
-
-        return {
-            'id': sub.unit.id,
-            'mtime': int(dateformat.format(sub.creation_time, 'U')),
-            'snippet': sub.get_submission_message()
-        }
 
     def get_adjusted_pootle_path(self, pootle_path):
         """Adjust the given pootle path to this virtual folder.
@@ -345,19 +275,182 @@ class VirtualFolder(models.Model):
         trail = pootle_path.replace(lead, '').lstrip('/')
         return '/'.join([lead, self.name, trail])
 
-    def get_translate_url(self, pootle_path, **kwargs):
-        """Get the translate URL for this virtual folder in the given path."""
-        adjusted_path = self.get_adjusted_pootle_path(pootle_path)
-        lang, proj, dp, fn = split_pootle_path(adjusted_path)
 
+class VirtualFolderTreeItemManager(models.Manager):
+    use_for_related_fields = True
+
+    def get_queryset(self):
+        return super(VirtualFolderTreeItemManager, self) \
+            .get_queryset().select_related('vfolder')
+
+    def live(self):
+        """Filter VirtualFolderTreeItems with non-obsolete directories."""
+        return self.filter(directory__obsolete=False)
+
+
+class VirtualFolderTreeItem(models.Model, CachedTreeItem):
+
+    directory = models.ForeignKey(
+        Directory,
+        related_name='vf_treeitems',
+        db_index=True,
+    )
+    vfolder = models.ForeignKey(
+        VirtualFolder,
+        related_name='vf_treeitems',
+        db_index=True,
+    )
+    parent = models.ForeignKey(
+        'VirtualFolderTreeItem',
+        related_name='child_vf_treeitems',
+        null=True,
+        db_index=True,
+    )
+    pootle_path = models.CharField(
+        max_length=255,
+        null=False,
+        unique=True,
+        db_index=True,
+        editable=False,
+    )
+    stores = models.ManyToManyField(
+        Store,
+        db_index=True,
+        related_name='parent_vf_treeitems',
+    )
+
+    objects = VirtualFolderTreeItemManager()
+
+    class Meta:
+        unique_together = ('directory', 'vfolder')
+
+    ############################ Properties ###################################
+
+    @property
+    def is_visible(self):
+        return (self.vfolder.is_public and
+                (self.has_critical_errors or
+                 self.has_suggestions or
+                 (self.vfolder.priority >= 1 and not self.is_fully_translated)))
+
+    @property
+    def has_critical_errors(self):
+        try:
+            return self.get_error_unit_count() > 0
+        except NoCachedStats:
+            return False
+
+    @property
+    def has_suggestions(self):
+        try:
+            return self.get_cached(CachedMethods.SUGGESTIONS) > 0
+        except NoCachedStats:
+            return False
+
+    @property
+    def is_fully_translated(self):
+        try:
+            wordcount_stats = self.get_cached(CachedMethods.WORDCOUNT_STATS)
+        except NoCachedStats:
+            return False
+
+        return wordcount_stats['total'] == wordcount_stats['translated']
+
+    @property
+    def code(self):
+        return self.pk
+
+    ############################ Methods ######################################
+
+    def __unicode__(self):
+        return self.pootle_path
+
+    def save(self, *args, **kwargs):
+        self.pootle_path = self.vfolder.get_adjusted_pootle_path(
+            self.directory.pootle_path
+        )
+
+        # Force validation of fields.
+        self.clean_fields()
+
+        # Trigger the creation of the whole parent tree up to the vfolder
+        # adjusted location.
+        if self.directory.pootle_path.count('/') > self.vfolder.location.count('/'):
+            parent, created = VirtualFolderTreeItem.objects.get_or_create(
+                directory=self.directory.parent,
+                vfolder=self.vfolder,
+            )
+            self.parent = parent
+
+        super(VirtualFolderTreeItem, self).save(*args, **kwargs)
+
+        # Relate immediate child stores for this item's directory that have
+        # units in this item's vfolder.
+        self.stores = self.directory.child_stores.filter(
+            unit__vfolders=self.vfolder
+        ).distinct()
+
+    def delete(self, *args, **kwargs):
+        self.clear_all_cache(parents=False, children=False)
+
+        for vfolder_treeitem in self.child_vf_treeitems.iterator():
+            # Store children are deleted by the regular folders.
+            vfolder_treeitem.delete()
+
+        super(VirtualFolderTreeItem, self).delete(*args, **kwargs)
+
+    def clean_fields(self):
+        """Validate virtual folder tree item fields."""
+        if Directory.objects.filter(pootle_path=self.pootle_path).exists():
+            msg = (u"Problem adding virtual folder '%s' with location '%s': "
+                   u"VirtualFolderTreeItem clashes with Directory %s" %
+                   (self.vfolder.name, self.vfolder.location, self.pootle_path))
+            raise ValidationError(msg)
+
+    def get_translate_url(self, **kwargs):
+        lang, proj, dp, fn = split_pootle_path(self.pootle_path)
         return u''.join([
             reverse('pootle-tp-translate', args=[lang, proj, dp, fn]),
             get_editor_filter(**kwargs),
         ])
 
-    def get_critical_url(self, pootle_path, **kwargs):
-        return self.get_translate_url(pootle_path, check_category='critical',
-                                      **kwargs)
+    ### TreeItem
+
+    def can_be_updated(self):
+        return not self.directory.obsolete
+
+    def get_cachekey(self):
+        return self.pootle_path
+
+    def get_parents(self):
+        if self.parent:
+            return [self.parent]
+
+        return []
+
+    def get_children(self):
+        result = [store for store in self.stores.live().iterator()]
+        result.extend([vfolder_treeitem for vfolder_treeitem
+                       in self.child_vf_treeitems.live().iterator()])
+        return result
+
+    def get_stats(self, include_children=True):
+        result = super(VirtualFolderTreeItem, self).get_stats(
+            include_children=include_children
+        )
+        result['isVisible'] = self.is_visible
+        return result
+
+    def all_pootle_paths(self):
+        """Get cache_key for all parents up to virtual folder location.
+
+        We only return the paths for the VirtualFolderTreeItem tree since we
+        don't want to mess with regular CachedTreeItem stats.
+        """
+        return [p for p in get_all_pootle_paths(self.get_cachekey())
+                if p.count('/') > self.vfolder.location.count('/')]
+
+    ### /TreeItem
 
 
 @receiver(post_save, sender=Unit)
@@ -382,4 +475,17 @@ def relate_unit(sender, instance, created=False, **kwargs):
             for filename in vf.filter_rules.split(","):
                 if pootle_path == "".join([location, filename]):
                     vf.units.add(instance)
+
+                    # Create missing VirtualFolderTreeItem tree structure after
+                    # adding this new unit.
+                    vfolder_treeitem, created = VirtualFolderTreeItem.objects.get_or_create(
+                        directory=instance.store.parent,
+                        vfolder=vf,
+                    )
+
+                    if not created:
+                        # The VirtualFolderTreeItem already existed, so
+                        # calculate again the stats up to the root.
+                        vfolder_treeitem.update_all_cache()
+
                     break

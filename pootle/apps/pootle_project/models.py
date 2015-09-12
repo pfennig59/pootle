@@ -36,7 +36,6 @@ from pootle_app.models.directory import Directory
 from pootle_app.models.permissions import PermissionSet
 from pootle_store.filetypes import filetype_choices, factory_classes
 from pootle_store.util import absolute_real_path
-from virtualfolder.signals import vfolder_post_save
 
 
 RESERVED_PROJECT_CODES = ('admin', 'translate', 'settings')
@@ -63,11 +62,13 @@ class ProjectManager(models.Manager):
         projects = cache.get(cache_key)
         if not projects:
             logging.debug('Cache miss for %s', cache_key)
+            projects_dict = self.for_user(user).order_by('fullname') \
+                                               .values('code', 'fullname',
+                                                       'disabled')
             projects = OrderedDict(
-                self.for_user(user).order_by('fullname')
-                                   .values_list('code', 'fullname')
+                (project.pop('code'), project) for project in projects_dict
             )
-            cache.set(cache_key, projects, settings.OBJECT_CACHE_TIMEOUT)
+            cache.set(cache_key, projects, settings.POOTLE_CACHE_TIMEOUT)
 
         return projects
 
@@ -265,7 +266,7 @@ class Project(models.Model, CachedTreeItem, ProjectURLMixin):
                 (user_projects.union(allow_projects)).difference(forbid_projects)
 
         user_projects = list(user_projects)
-        cache.set(key, user_projects, settings.OBJECT_CACHE_TIMEOUT)
+        cache.set(key, user_projects, settings.POOTLE_CACHE_TIMEOUT)
 
         return user_projects
 
@@ -286,15 +287,18 @@ class Project(models.Model, CachedTreeItem, ProjectURLMixin):
 
     @property
     def vfolders(self):
-        """Return the browsable virtual folders for this project."""
-        # This import must be here to avoid circular import issues.
-        from virtualfolder.models import VirtualFolder
+        """Return the public virtual folders for this project."""
+        if 'virtualfolder' in settings.INSTALLED_APPS:
+            # This import must be here to avoid circular import issues.
+            from virtualfolder.models import VirtualFolder
 
-        return [vf.tp_relative_path
-                for vf in VirtualFolder.objects.filter(
-                    units__store__translation_project__project__code=self.code,
-                    is_browsable=True
-                ).distinct()]
+            return [vf.tp_relative_path
+                    for vf in VirtualFolder.objects.filter(
+                        units__store__translation_project__project__code=self.code,
+                        is_public=True
+                    ).distinct()]
+
+        return []
 
     @cached_property
     def languages(self):
@@ -341,7 +345,7 @@ class Project(models.Model, CachedTreeItem, ProjectURLMixin):
         resources = sorted(resources_set | set(self.vfolders),
                            key=get_path_sortkey)
 
-        cache.set(cache_key, resources, settings.OBJECT_CACHE_TIMEOUT)
+        cache.set(cache_key, resources, settings.POOTLE_CACHE_TIMEOUT)
 
         return resources
 
@@ -524,22 +528,25 @@ class ProjectSet(VirtualResource, ProjectURLMixin):
     ### /TreeItem
 
 
-@receiver([vfolder_post_save, pre_delete])
-def invalidate_resources_cache_for_vfolders(sender, instance, **kwargs):
-    if instance.__class__.__name__ == 'VirtualFolder':
-        try:
-            # In case this is vfolder_post_save.
-            affected_projects = kwargs['projects']
-        except KeyError:
-            # In case this is pre_delete.
-            affected_projects = Project.objects.filter(
-                translationproject__stores__unit__vfolders=instance
-            ).distinct().values_list('code', flat=True)
+if 'virtualfolder' in settings.INSTALLED_APPS:
+    from virtualfolder.signals import vfolder_post_save
 
-        cache.delete_many([
-            make_method_key('Project', 'resources', proj)
-            for proj in affected_projects
-        ])
+    @receiver([vfolder_post_save, pre_delete])
+    def invalidate_resources_cache_for_vfolders(sender, instance, **kwargs):
+        if instance.__class__.__name__ == 'VirtualFolder':
+            try:
+                # In case this is vfolder_post_save.
+                affected_projects = kwargs['projects']
+            except KeyError:
+                # In case this is pre_delete.
+                affected_projects = Project.objects.filter(
+                    translationproject__stores__unit__vfolders=instance
+                ).distinct().values_list('code', flat=True)
+
+            cache.delete_many([
+                make_method_key('Project', 'resources', proj)
+                for proj in affected_projects
+            ])
 
 
 @receiver([post_delete, post_save])

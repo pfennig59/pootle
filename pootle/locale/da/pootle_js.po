@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/translate/pootle/issues/new\n"
-"POT-Creation-Date: 2015-06-15 11:37+0100\n"
-"PO-Revision-Date: 2015-05-30 22:37+0000\n"
+"POT-Creation-Date: 2015-09-07 16:55+0100\n"
+"PO-Revision-Date: 2015-06-22 18:31+0000\n"
 "Last-Translator: Jesper <jesper.hertel@gmail.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: da\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Pootle 2.5.1-rc1\n"
-"X-POOTLE-MTIME: 1433025433.000000\n"
+"X-POOTLE-MTIME: 1434997860.000000\n"
 
 #: static/js/admin/components/AdminController.js:95
 msgid "Saved successfully."
@@ -30,7 +30,7 @@ msgstr "Slettet."
 
 #: static/js/admin/components/ItemDelete.js:51
 msgid "Delete"
-msgstr ""
+msgstr "Slet"
 
 #: static/js/admin/components/LanguageForm.js:58
 #: static/js/admin/components/ProjectForm.js:61
@@ -39,7 +39,7 @@ msgstr "Kode"
 
 #: static/js/admin/components/LanguageForm.js:64
 #: static/js/admin/components/ProjectForm.js:67
-#: static/js/admin/components/UserForm.js:89 static/js/user/forms.jsx:73
+#: static/js/admin/components/UserForm.js:89 static/js/user/forms.jsx:75
 msgid "Full Name"
 msgstr "Fuldt navn"
 
@@ -57,7 +57,7 @@ msgstr "Flertalsformel"
 
 #: static/js/admin/components/LanguageForm.js:95
 #: static/js/admin/components/ProjectForm.js:137
-#: static/js/admin/components/UserForm.js:144 static/js/user/forms.jsx:120
+#: static/js/admin/components/UserForm.js:144 static/js/user/forms.jsx:121
 msgid "Save"
 msgstr "Gem"
 
@@ -81,33 +81,31 @@ msgstr "Filtype"
 
 #: static/js/admin/components/ProjectForm.js:94
 msgid "Project Tree Style"
-msgstr ""
+msgstr "Stil for projekttræ"
 
 #: static/js/admin/components/ProjectForm.js:103
-#, fuzzy
 msgid "Source Language"
-msgstr "Søg efter sprog"
+msgstr "Kildesprog"
 
 #: static/js/admin/components/ProjectForm.js:109
 msgid "Ignore Files"
-msgstr ""
+msgstr "Ignorer filer"
 
 #: static/js/admin/components/ProjectForm.js:116
 msgid "String Errors Contact"
-msgstr ""
+msgstr "Kontaktperson for fejl i strenge"
 
 #: static/js/admin/components/ProjectForm.js:122
 msgid "Screenshot Search Prefix"
 msgstr ""
 
 #: static/js/admin/components/ProjectForm.js:129
-#, fuzzy
 msgid "Disabled"
-msgstr "slået fra"
+msgstr "Slået fra"
 
 #: static/js/admin/components/ProjectForm.js:141
 msgid "Languages"
-msgstr ""
+msgstr "Sprog"
 
 #: static/js/admin/components/Search.js:66
 msgid "Load More"
@@ -118,157 +116,170 @@ msgid "Loading..."
 msgstr "Indlæser…"
 
 #: static/js/admin/components/UserForm.js:52
+#, fuzzy
 msgid ""
-"Note: deleting the user will make its suggestions and translations become "
-"attributed to an anonymous user (nobody)."
+"Note: when deleting a user their contributions to the site, eg comments, "
+"suggestions and translations, are attributed to the anonymous user (nobody)."
 msgstr ""
+"Bemærk: Hvis brugeren slettes, vil vedkommendes forslag og oversættelser "
+"blive tildelt en anonym bruger (ingen)."
 
 #: static/js/admin/components/UserForm.js:64
 #: static/js/auth/components/SignInForm.js:95
 #: static/js/auth/components/SignUpForm.js:84
 msgid "Username"
-msgstr ""
+msgstr "Brugernavn"
 
 #: static/js/admin/components/UserForm.js:73
 msgid "Active"
-msgstr ""
+msgstr "Aktiv"
 
 #: static/js/admin/components/UserForm.js:80
 #: static/js/auth/components/SignInForm.js:104
 #: static/js/auth/components/SignUpForm.js:100
 #: static/js/auth/components/SocialVerification.js:94
 msgid "Password"
-msgstr ""
+msgstr "Adgangskode"
 
 #: static/js/admin/components/UserForm.js:81
 msgid "Set a new password"
-msgstr ""
+msgstr "Angiv en ny adgangskode"
 
 #: static/js/admin/components/UserForm.js:95
 #: static/js/auth/components/SignUpForm.js:92
 msgid "Email"
-msgstr ""
+msgstr "E-mail"
 
 #: static/js/admin/components/UserForm.js:104
 msgid "Administrator"
-msgstr ""
+msgstr "Administrator"
 
-#: static/js/admin/components/UserForm.js:111 static/js/user/forms.jsx:88
+#: static/js/admin/components/UserForm.js:111 static/js/user/forms.jsx:89
 msgid "Twitter"
-msgstr ""
+msgstr "Twitter"
 
 #: static/js/admin/components/UserForm.js:113
 msgid "Twitter username"
-msgstr ""
+msgstr "Twitter-brugernavn"
 
-#: static/js/admin/components/UserForm.js:119 static/js/user/forms.jsx:95
+#: static/js/admin/components/UserForm.js:119 static/js/user/forms.jsx:96
 msgid "LinkedIn"
-msgstr ""
+msgstr "LinkedIn"
 
 #: static/js/admin/components/UserForm.js:121
 msgid "LinkedIn profile URL"
-msgstr ""
+msgstr "URL til LinkedIn-profil"
 
-#: static/js/admin/components/UserForm.js:126 static/js/user/forms.jsx:101
+#: static/js/admin/components/UserForm.js:126 static/js/user/forms.jsx:102
 msgid "Website"
-msgstr ""
+msgstr "Hjemmeside"
 
 #: static/js/admin/components/UserForm.js:128
 msgid "Personal website URL"
-msgstr ""
+msgstr "Personlig hjemmeside-URL"
 
-#: static/js/admin/components/UserForm.js:134 static/js/user/forms.jsx:108
+#: static/js/admin/components/UserForm.js:134 static/js/user/forms.jsx:109
 msgid "Short Bio"
 msgstr ""
 
 #: static/js/admin/components/UserForm.js:136
 msgid "Personal description"
-msgstr ""
+msgstr "Personlig beskrivelse"
 
 #: static/js/admin/components/UserForm.js:147
 msgid "Public Profile"
-msgstr ""
+msgstr "Offentlig profil"
 
 #: static/js/admin/components/UserForm.js:148
 msgid "Settings"
-msgstr ""
+msgstr "Indstillinger"
 
 #: static/js/admin/components/UserForm.js:149
 msgid "Statistics"
-msgstr ""
+msgstr "Statistik"
 
 #: static/js/admin/components/UserForm.js:150
 msgid "Reports"
-msgstr ""
+msgstr "Rapporter"
 
 #: static/js/auth/components/AccountActivation.js:33
-#, javascript-format
-msgid "We have sent an email containing the special link to <span>%s</span>."
-msgstr ""
+#, fuzzy, javascript-format
+msgid "We have sent an email containing the special link to <span>%s</span>"
+msgstr "Vi har sendt en e-mail med det specielle link til <span>%s</span>."
 
 #: static/js/auth/components/AccountActivation.js:38
 msgid ""
 "We have sent an email containing the special link to the address used to "
 "register this account."
 msgstr ""
+"Vi har sendt en e-mail med det specielle link til den e-mailadresse, der "
+"blev brugt til at registrere denne konto."
 
 #: static/js/auth/components/AccountActivation.js:42
 msgid "Your account needs activation."
-msgstr ""
+msgstr "Din konto skal aktiveres."
 
 #: static/js/auth/components/AccountActivation.js:43
 msgid "Please follow that link to continue the account creation."
-msgstr ""
+msgstr "Følg venligst det link for at fortsætte oprettelsen af kontoen."
 
-#: static/js/auth/components/AccountActivation.js:56
+#: static/js/auth/components/AccountActivation.js:57
 #: static/js/auth/components/AccountInactive.js:36
+#: static/js/auth/components/EmailConfirmation.js:36
 msgid "Close"
-msgstr ""
+msgstr "Luk"
 
 #: static/js/auth/components/AccountInactive.js:30
 msgid "Your account is inactive because an administrator deactivated it."
-msgstr ""
+msgstr "Din konto er inaktiv fordi en administrator deaktiverede den."
 
-#: static/js/auth/components/AuthController.js:82
+#: static/js/auth/components/AuthController.js:83
 msgid "Sign In With..."
-msgstr ""
+msgstr "Log ind med…"
 
-#: static/js/auth/components/AuthController.js:82
+#: static/js/auth/components/AuthController.js:83
 #: static/js/auth/components/SignInForm.js:122
 #: static/js/auth/components/SocialVerification.js:112
 msgid "Sign In"
-msgstr ""
+msgstr "Log ind"
 
-#: static/js/auth/components/AuthController.js:89
+#: static/js/auth/components/AuthController.js:90
 msgid "Account Inactive"
-msgstr ""
+msgstr "Konto inaktiv"
 
-#: static/js/auth/components/AuthController.js:96
+#: static/js/auth/components/AuthController.js:97
 #: static/js/auth/components/SignUpForm.js:121
 msgid "Sign Up"
-msgstr ""
+msgstr "Tilmeld dig"
 
-#: static/js/auth/components/AuthController.js:103
-#: static/js/auth/components/AuthController.js:110
+#: static/js/auth/components/AuthController.js:104
 msgid "Account Activation"
+msgstr "Kontoaktivering"
+
+#: static/js/auth/components/AuthController.js:111
+msgid "Email Confirmation"
 msgstr ""
 
-#: static/js/auth/components/AuthController.js:117
-#: static/js/auth/components/AuthController.js:124
-#: static/js/auth/components/AuthController.js:131
+#: static/js/auth/components/AuthController.js:118
+#: static/js/auth/components/AuthController.js:125
+#: static/js/auth/components/AuthController.js:132
 msgid "Reset Your Password"
-msgstr ""
+msgstr "Nulstil din adgangskode"
 
-#: static/js/auth/components/AuthController.js:138
+#: static/js/auth/components/AuthController.js:139
 msgid "Oops..."
-msgstr ""
+msgstr "Ups…"
 
-#: static/js/auth/components/AuthController.js:145
+#: static/js/auth/components/AuthController.js:146
 msgid "Social Verification"
-msgstr ""
+msgstr "Social bekræftelse"
 
 #: static/js/auth/components/AuthWindow.js:21
 msgid "Contact Us"
+msgstr "Kontakt os"
+
+#: static/js/auth/components/EmailConfirmation.js:30
+msgid "This email confirmation link expired or is invalid."
 msgstr ""
 
 #: static/js/auth/components/PasswordResetForm.js:80
@@ -276,111 +287,111 @@ msgid ""
 "The password reset link was invalid, possibly because it has already been "
 "used. Please request a new password reset."
 msgstr ""
+"Linket til nulstilling af adgangskoden var ugyldigt, måske fordi det "
+"allerede har været brugt. Anmod venligst om en ny nulstilling af adgangskode."
 
 #: static/js/auth/components/PasswordResetForm.js:86
 msgid "Reset Password"
-msgstr ""
+msgstr "Nulstil adgangskode"
 
 #: static/js/auth/components/PasswordResetForm.js:98
 msgid "Password changed, signing in..."
-msgstr ""
+msgstr "Adgangskode ændret, logger ind…"
 
 #: static/js/auth/components/PasswordResetForm.js:122
 #: static/js/auth/components/SignUpForm.js:108
 msgid "Repeat Password"
-msgstr ""
+msgstr "Gentag adgangskode"
 
 #: static/js/auth/components/PasswordResetForm.js:135
 msgid "Set New Password"
-msgstr ""
+msgstr "Angiv ny adgangskode"
 
 #: static/js/auth/components/PasswordResetForm.js:139
 msgid "After changing your password you will sign in automatically."
 msgstr ""
+"Efter du har ændret din adgangskode vil du automatisk blive logget ind."
 
 #: static/js/auth/components/RequestPasswordResetProgress.js:25
 #, javascript-format
 msgid "Sending email to %s..."
-msgstr ""
+msgstr "Sender e-mail til %s…"
 
 #: static/js/auth/components/RequestPasswordResetSent.js:47
 msgid "Please follow that link to continue the password reset procedure."
-msgstr ""
+msgstr "Følg venligst det link for at fortsætte nulstillingen af adgangskoden."
 
 #: static/js/auth/components/RequestPasswordResetSent.js:48
 msgid ""
 "Didn't receive an email? Check if it was accidentally filtered out as spam, "
 "or try requesting another copy of the email."
 msgstr ""
+"Modtog du ikke en e-mail? Kontroller om den ved et uheld blev frafiltreret "
+"som uønsket post (spam), eller bed om at få en ny kopi af e-mailen tilsendt."
 
 #: static/js/auth/components/RequestPasswordResetSent.js:62
 msgid "Resend Email"
-msgstr ""
+msgstr "Gensend e-mail"
 
 #: static/js/auth/components/SignInForm.js:83
 msgid "Sign up as a new user"
-msgstr ""
+msgstr "Tilmeld dig som en ny bruger"
 
 #: static/js/auth/components/SignInForm.js:111
 #: static/js/auth/components/SocialVerification.js:101
 msgid "I forgot my password"
-msgstr ""
+msgstr "Jeg har glemt min adgangskode"
 
 #: static/js/auth/components/SignInPanel.js:49
 #: static/js/auth/components/SocialVerification.js:72
 msgid "Signed in. Redirecting..."
-msgstr ""
+msgstr "Logget ind. Viderestiller…"
 
 #: static/js/auth/components/SignInPanel.js:62
-#, fuzzy
 msgid "Social Services"
-msgstr "Specialtegn"
+msgstr "Sociale tjenester"
 
 #: static/js/auth/components/SignInPanel.js:65
 msgid "Login / Password"
-msgstr ""
+msgstr "Login / adgangskode"
 
 #: static/js/auth/components/SignUpForm.js:126
 msgid "Sign in as an existing user"
-msgstr ""
+msgstr "Log ind som en eksisterende bruger"
 
 #: static/js/auth/components/SocialAuthError.js:31
 #, javascript-format
 msgid "An error occurred while attempting to sign in via %s."
-msgstr ""
+msgstr "En fejl opstod under forsøget på at logge ind via %s."
 
 #: static/js/auth/components/SocialAuthError.js:35
 msgid "An error occurred while attempting to sign in via your social account."
-msgstr ""
+msgstr "En fejl opstod under forsøget på at logge ind via din sociale konto."
 
 #: static/js/auth/components/SocialAuthError.js:51
 msgid "Try again"
-msgstr ""
+msgstr "Prøv igen"
 
 #: static/js/auth/components/SocialSignInForm.js:40
 #, javascript-format
 msgid "Sign In With %s"
-msgstr ""
+msgstr "Log ind med %s"
 
 #: static/js/auth/components/SocialSignInForm.js:46
 msgid ""
 "Signing in with an external service for the first time will automatically "
 "create an account for you."
 msgstr ""
+"Når du logger ind via en ekstern tjeneste første gang, vil der automatisk "
+"blive oprettet en konto til dig."
 
-#: static/js/browser.js:156
-msgid "All Languages"
-msgstr "Alle sprog"
+#: static/js/editor/app.js:241 static/js/editor/app.js:537
+msgid ""
+"You have unsaved changes in this unit. Navigating away will discard those "
+"changes."
+msgstr ""
 
-#: static/js/browser.js:159
-msgid "All Projects"
-msgstr "Alle projekter"
-
-#: static/js/browser.js:162
-msgid "Entire Project"
-msgstr "Hele projektet"
-
-#: static/js/editor/app.js:243
+#: static/js/editor/app.js:267
 msgid ""
 "Go to the next string (Ctrl+.)<br/><br/>Also:<br/>Next page: Ctrl+Shift+.<br/"
 ">Last page: Ctrl+Shift+End"
@@ -388,7 +399,7 @@ msgstr ""
 "Gå til næste streng (Ctrl+.)<br/><br/>Også:<br/>Næste side: Ctrl+Skift+.<br/"
 ">Sidste side: Ctrl+Skift+End"
 
-#: static/js/editor/app.js:247
+#: static/js/editor/app.js:271
 msgid ""
 "Go to the previous string (Ctrl+,)<br/><br/>Also:</br>Previous page: Ctrl"
 "+Shift+,<br/>First page: Ctrl+Shift+Home"
@@ -396,77 +407,76 @@ msgstr ""
 "Gå til forrige streng (Ctrl+,)<br/><br/>Også:<br/>Forrige side: Ctrl+Skift+,"
 "<br/>Første side: Ctrl+Skift+Home"
 
-#: static/js/editor/app.js:359
+#: static/js/editor/app.js:383
 #, javascript-format
 msgid "%s's pending suggestions"
 msgstr "Afventende forslag fra %s"
 
-#: static/js/editor/app.js:362
+#: static/js/editor/app.js:386
 #, javascript-format
 msgid "%s's accepted suggestions"
 msgstr "Accepterede forslag fra %s"
 
-#: static/js/editor/app.js:365
+#: static/js/editor/app.js:389
 #, javascript-format
 msgid "%s's rejected suggestions"
 msgstr "Afviste forslag fra %s"
 
-#: static/js/editor/app.js:368
+#: static/js/editor/app.js:392
 #, javascript-format
 msgid "%s's submissions"
 msgstr "Bidrag fra %s"
 
-#: static/js/editor/app.js:372
+#: static/js/editor/app.js:396
 #, javascript-format
 msgid "%s's overwritten submissions"
 msgstr "Overskrevne indsendelser fra %s"
 
-#: static/js/editor/app.js:501 static/js/editor/app.js:1650
+#: static/js/editor/app.js:529 static/js/editor/app.js:1740
 msgid "No results."
 msgstr "Ingen resultater."
 
-#: static/js/editor/app.js:960
+#: static/js/editor/app.js:1042
 msgid "Error while connecting to the server"
 msgstr "Fejl ved tilslutning til server"
 
-#: static/js/editor/app.js:964
+#: static/js/editor/app.js:1046
 msgid "Not found"
 msgstr "Ikke fundet"
 
-#: static/js/editor/app.js:966
+#: static/js/editor/app.js:1048
 msgid "Server error"
 msgstr "Serverfejl"
 
-#: static/js/editor/app.js:968
+#: static/js/editor/app.js:1050
 msgid "The server seems down. Try again later."
 msgstr "Serveren ser ud til at være nede. Forsøg igen senere."
 
-#: static/js/editor/app.js:975
+#: static/js/editor/app.js:1057
 msgid "Unknown error"
 msgstr "Ukendt fejl"
 
-#: static/js/editor/app.js:983
+#: static/js/editor/app.js:1065
 msgid "This unit no longer exists."
 msgstr "Denne enhed findes ikke længere."
 
-#: static/js/editor/app.js:984
-#, fuzzy
+#: static/js/editor/app.js:1066
 msgid "Go back to browsing"
 msgstr "Gå tilbage til oversigt"
 
-#: static/js/editor/app.js:986
+#: static/js/editor/app.js:1068
 msgid "Reload page"
 msgstr "Genindlæs side"
 
-#: static/js/editor/app.js:1986
+#: static/js/editor/app.js:2094
 msgid "some anonymous user"
 msgstr "en anonym bruger"
 
-#: static/js/editor/app.js:1988
+#: static/js/editor/app.js:2096
 msgid "someone"
 msgstr "nogen"
 
-#: static/js/editor/app.js:2005 static/js/editor/app.js:2054
+#: static/js/editor/app.js:2114 static/js/editor/app.js:2163
 msgid "Similar translations"
 msgstr "Lignende oversættelser"
 
@@ -474,51 +484,75 @@ msgstr "Lignende oversættelser"
 msgid "disabled"
 msgstr "slået fra"
 
-#: static/js/stats.js:286
+#: static/js/stats.js:349
 #, javascript-format
 msgid "%s second"
 msgid_plural "%s seconds"
 msgstr[0] "%s sekund"
 msgstr[1] "%s sekunder"
 
-#: static/js/stats.js:318
-msgid "Expand details"
-msgstr "Udvid detaljer"
-
-#: static/js/stats.js:318
+#: static/js/stats.js:393
 msgid "Collapse details"
 msgstr "Sammenfold detaljer"
 
+#: static/js/stats.js:393
+msgid "Expand details"
+msgstr "Udvid detaljer"
+
+#: static/js/user/components/UserProfileEdit.js:106
+msgid "Edit My Public Profile"
+msgstr "Rediger min offentlige profil"
+
+#: static/js/user/components/UserProfileEdit.js:113
+msgid "My Public Profile"
+msgstr "Min offentlige profil"
+
+#: static/js/user/components/UserProfileEdit.js:125
+msgid "Discard changes."
+msgstr "Kassér ændringer."
+
+#: static/js/user/components/UserProfileEdit.js:126
+msgid "Yes"
+msgstr "Ja"
+
+#: static/js/user/components/UserProfileEdit.js:127
+msgid "No"
+msgstr "Nej"
+
+#: static/js/user/components/UserProfileEdit.js:128
+msgid "There are unsaved changes. Do you want to discard them?"
+msgstr "Der er ændringer, der ikke er gemt. Vil du kassere dem?"
+
 #: static/js/utils.js:151
-#, fuzzy, javascript-format
+#, javascript-format
 msgid "A year ago"
 msgid_plural "%s years ago"
 msgstr[0] "Et år siden"
 msgstr[1] "%s år siden"
 
 #: static/js/utils.js:154
-#, fuzzy, javascript-format
+#, javascript-format
 msgid "A week ago"
 msgid_plural "%s weeks ago"
 msgstr[0] "En uge siden"
 msgstr[1] "%s uger siden"
 
 #: static/js/utils.js:157
-#, fuzzy, javascript-format
+#, javascript-format
 msgid "Yesterday"
 msgid_plural "%s days ago"
 msgstr[0] "I går"
 msgstr[1] "%s dage siden"
 
 #: static/js/utils.js:160
-#, fuzzy, javascript-format
+#, javascript-format
 msgid "An hour ago"
 msgid_plural "%s hours ago"
 msgstr[0] "En time siden"
 msgstr[1] "%s timer siden"
 
 #: static/js/utils.js:163
-#, fuzzy, javascript-format
+#, javascript-format
 msgid "A minute ago"
 msgid_plural "%s minutes ago"
 msgstr[0] "Et minut siden"
@@ -652,180 +686,174 @@ msgstr ""
 
 #: static/js/shared/components/forms.jsx:69
 msgid "Select..."
-msgstr ""
+msgstr "Vælg…"
 
 #: static/js/shared/components/forms.jsx:70
 msgid "No results found"
-msgstr ""
+msgstr "Ingen resultater fundet"
 
 #: static/js/shared/components/forms.jsx:71
 msgid "Clear value"
-msgstr ""
+msgstr "Ryd værdi"
 
 #: static/js/shared/components/forms.jsx:72
 msgid "Clear all"
-msgstr ""
+msgstr "Ryd alle"
 
 #: static/js/shared/components/forms.jsx:73
 msgid "Type to search"
-msgstr ""
+msgstr "Skriv for at søge"
 
-#: static/js/user/components/edit.jsx:106
-msgid "Edit My Public Profile"
-msgstr ""
-
-#: static/js/user/components/edit.jsx:113
-msgid "My Public Profile"
-msgstr ""
-
-#: static/js/user/components/edit.jsx:125
-msgid "Discard changes."
-msgstr ""
-
-#: static/js/user/components/edit.jsx:126
-msgid "Yes"
-msgstr ""
-
-#: static/js/user/components/edit.jsx:127
-msgid "No"
-msgstr ""
-
-#: static/js/user/components/edit.jsx:128
-msgid "There are unsaved changes. Do you want to discard them?"
-msgstr ""
-
-#: static/js/user/forms.jsx:61
+#: static/js/user/forms.jsx:63
 #, python-format
 msgid ""
 "To set or change your avatar for your email address (%(email)s), please go "
 "to gravatar.com."
 msgstr ""
+"Gå til gravatar.com for at indstille eller ændre det tilknyttede billede "
+"(avatar) for din e-mailadresse (%(email)s)."
 
-#: static/js/user/forms.jsx:74
+#: static/js/user/forms.jsx:76
 msgid "Your Full Name"
-msgstr ""
+msgstr "Dit fulde navn"
 
-#: static/js/user/forms.jsx:80
+#: static/js/user/forms.jsx:82
 msgid "Avatar"
-msgstr ""
+msgstr "Tilknyttet billede (avatar)"
 
-#: static/js/user/forms.jsx:90
+#: static/js/user/forms.jsx:91
 msgid "Your Twitter username"
-msgstr ""
+msgstr "Dit Twitter-brugernavn"
 
-#: static/js/user/forms.jsx:97
+#: static/js/user/forms.jsx:98
 msgid "Your LinkedIn profile URL"
-msgstr ""
+msgstr "URL til din LinkedIn-profil"
 
-#: static/js/user/forms.jsx:103
+#: static/js/user/forms.jsx:104
 msgid "Your Personal website/blog URL"
-msgstr ""
+msgstr "URL til din personlige hjemmeside eller blog"
 
-#: static/js/user/forms.jsx:111
+#: static/js/user/forms.jsx:112
 msgid ""
 "Why are you part of our translation project? Describe yourself, inspire "
 "others!"
 msgstr ""
+"Hvorfor deltager du i vores oversættelsesprojekt? Beskriv dig selv, inspirer "
+"andre!"
 
 #: templates/admin/xhr_language_user_activity.html:6
 msgid "Project / Language"
-msgstr ""
+msgstr "Projekt / sprog"
 
 #: templates/admin/xhr_language_user_activity.html:7
-msgid "Translated"
+msgid "Suggested"
 msgstr ""
 
 #: templates/admin/xhr_language_user_activity.html:8
-msgid "Reviewed"
-msgstr ""
+msgid "Translated"
+msgstr "Oversat"
 
 #: templates/admin/xhr_language_user_activity.html:9
+msgid "Reviewed"
+msgstr "Gennemgået"
+
+#: templates/admin/xhr_language_user_activity.html:10
 msgid "Score Change"
-msgstr ""
+msgstr "Ændring i score"
 
-#: templates/admin/xhr_language_user_activity.html:16
-#: templates/admin/xhr_language_user_activity.html:17
-#: templates/admin/xhr_language_user_activity.html:23
+#: templates/admin/xhr_language_user_activity.html:20
 #: templates/admin/xhr_language_user_activity.html:24
-#: templates/admin/xhr_paid_tasks_report.html:24
-#: templates/admin/xhr_summary_report.html:21
-#: templates/admin/xhr_summary_report.html:35
-msgid "word"
-msgid_plural "words"
-msgstr[0] ""
-msgstr[1] ""
+#: templates/admin/xhr_language_user_activity.html:31
+#: templates/admin/xhr_language_user_activity.html:35
+#: templates/admin/xhr_language_user_activity.html:40
+#: templates/admin/xhr_language_user_activity.html:51
+#: templates/admin/xhr_language_user_activity.html:55
+#: templates/admin/xhr_language_user_activity.html:59
+#, fuzzy, python-format
+msgid "%s word"
+msgid_plural "%s words"
+msgstr[0] "ord"
+msgstr[1] "ord"
 
-#: templates/admin/xhr_language_user_activity.html:30
+#: templates/admin/xhr_language_user_activity.html:69
 msgid "No activity recorded in a given period"
-msgstr ""
+msgstr "Ingen aktivitet registreret i et stykke tid"
 
-#: templates/admin/xhr_language_user_activity.html:33
+#: templates/admin/xhr_language_user_activity.html:72
 msgid "Please select a valid user."
-msgstr ""
+msgstr "Vælg venligst en gyldig brugerkonto."
 
 #: templates/admin/xhr_paid_tasks_report.html:3
 msgid "Registered Tasks"
-msgstr ""
+msgstr "Registrerede opgaver"
 
 #: templates/admin/xhr_paid_tasks_report.html:7
 msgid "Datetime"
-msgstr ""
+msgstr "Dato og tidspunkt"
 
 #: templates/admin/xhr_paid_tasks_report.html:8
 msgid "Comment"
-msgstr ""
+msgstr "Kommentar"
 
 #: templates/admin/xhr_paid_tasks_report.html:9
 #: templates/admin/xhr_summary_report.html:7
 msgid "Action"
-msgstr ""
+msgstr "Handling"
 
 #: templates/admin/xhr_paid_tasks_report.html:10
 #: templates/admin/xhr_summary_report.html:8
 msgid "Amount"
-msgstr ""
+msgstr "Antal"
 
 #: templates/admin/xhr_paid_tasks_report.html:11
 #: templates/admin/xhr_summary_report.html:9
 msgid "Rate"
-msgstr ""
+msgstr "Hastighed"
 
 #: templates/admin/xhr_paid_tasks_report.html:12
 #: templates/admin/xhr_summary_report.html:10
 msgid "Subtotal"
-msgstr ""
+msgstr "Subtotal"
 
 #: templates/admin/xhr_paid_tasks_report.html:21
 #: templates/admin/xhr_summary_report.html:32
 msgid "hour"
 msgid_plural "hours"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "time"
+msgstr[1] "timer"
+
+#: templates/admin/xhr_paid_tasks_report.html:24
+#: templates/admin/xhr_summary_report.html:21
+#: templates/admin/xhr_summary_report.html:35
+msgid "word"
+msgid_plural "words"
+msgstr[0] "ord"
+msgstr[1] "ord"
 
 #: templates/admin/xhr_paid_tasks_report.html:36
 msgid "Remove task"
-msgstr ""
+msgstr "Fjern opgave"
 
 #: templates/admin/xhr_paid_tasks_report.html:41
 msgid "Comment on it"
-msgstr ""
+msgstr "Kommentér det"
 
 #: templates/admin/xhr_summary_report.html:2
 msgid "Summary"
-msgstr ""
+msgstr "Sammendrag"
 
 #: templates/admin/xhr_summary_report.html:6
 msgid "Period"
-msgstr ""
+msgstr "Periode"
 
 #: templates/admin/xhr_summary_report.html:41
 msgid "(registered tasks)"
-msgstr ""
+msgstr "(registrerede opgaver)"
 
 #: templates/admin/xhr_summary_report.html:49
 #, python-format
 msgid "Total (%(currency)s)"
-msgstr ""
+msgstr "Total (%(currency)s)"
 
 #: templates/editor/units/xhr_edit_ctx.html:4
 msgid "More"
@@ -849,6 +877,17 @@ msgid ""
 "Translated by %(fullname)s in &ldquo;<span title=\"%(path)s\">%(project)s</"
 "span>&rdquo; project"
 msgstr ""
+"Oversat af %(fullname)s i projektet &ldquo;<span title=\"%(path)s\">"
+"%(project)s</span>&rdquo;"
+
+#~ msgid "All Languages"
+#~ msgstr "Alle sprog"
+
+#~ msgid "All Projects"
+#~ msgstr "Alle projekter"
+
+#~ msgid "Entire Project"
+#~ msgstr "Hele projektet"
 
 #~ msgid "Are you sure you want to continue?"
 #~ msgstr "Er du sikker på at du vil fortsætte?"

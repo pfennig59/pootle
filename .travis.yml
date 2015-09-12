@@ -5,20 +5,19 @@ python:
   - 2.7
 env:
   matrix:
-    - DJANGO_VERSION=1.7.8 DATABASE_BACKEND=sqlite
-    - DJANGO_VERSION=1.7.8 DATABASE_BACKEND=postgres
-    - DJANGO_VERSION=1.7.8 DATABASE_BACKEND=mysql_innodb
-  global:
-    - PIP_DOWNLOAD_CACHE=".pip_download_cache"
+    - DJANGO_VERSION=1.7.10 DATABASE_BACKEND=sqlite
+    - DJANGO_VERSION=1.7.10 DATABASE_BACKEND=postgres
+    - DJANGO_VERSION=1.7.10 DATABASE_BACKEND=mysql_innodb
 cache:
   apt: true
   directories:
     - pootle/assets/js/node_modules
-    - .pip_download_cache
+    - $HOME/.cache/pip
     - docs/_build
 install:
-  - CFLAGS="-O0" travis_retry pip install -r requirements/travis.txt --timeout=240
-  - travis_retry pip install "Django>=$DJANGO_VERSION,<"$(echo $(echo $DJANGO_VERSION | cut -d"." -f1).$(( $(echo $DJANGO_VERSION | cut -d"." -f2) + 1 )) ) --timeout=240
+  - pip install --upgrade pip # FIXME remove once Travis support pip7 by default
+  - CFLAGS="-O0" pip install -r requirements/travis.txt
+  - pip install "Django>=$DJANGO_VERSION,<"$(echo $(echo $DJANGO_VERSION | cut -d"." -f1).$(( $(echo $DJANGO_VERSION | cut -d"." -f2) + 1 )) )
   - pip install .
   - pip freeze  # Print all installed versions for reference.
 before_script:

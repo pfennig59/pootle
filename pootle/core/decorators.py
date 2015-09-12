@@ -49,6 +49,13 @@ def get_path_obj(func):
                 split_pootle_path(pootle_path)
             kwargs['dir_path'] = dir_path
             kwargs['filename'] = filename
+
+            # Remove potentially present but unwanted args
+            try:
+                del kwargs['language_code']
+                del kwargs['project_code']
+            except KeyError:
+                pass
         else:
             language_code = kwargs.pop('language_code', None)
             project_code = kwargs.pop('project_code', None)
@@ -62,21 +69,22 @@ def get_path_obj(func):
             except TranslationProject.DoesNotExist:
                 path_obj = None
 
-            if path_obj is None and not request.is_ajax():
-                # Explicit selection via the UI: redirect either to
-                # ``/language_code/`` or ``/projects/project_code/``
-                user_choice = request.COOKIES.get('user-choice', None)
-                if user_choice and user_choice in ('language', 'project',):
-                    url = {
-                        'language': reverse('pootle-language-browse',
-                                            args=[language_code]),
-                        'project': reverse('pootle-project-browse',
-                                           args=[project_code, '', '']),
-                    }
-                    response = redirect(url[user_choice])
-                    response.delete_cookie('user-choice')
+            if path_obj is None:
+                if not request.is_ajax():
+                    # Explicit selection via the UI: redirect either to
+                    # ``/language_code/`` or ``/projects/project_code/``
+                    user_choice = request.COOKIES.get('user-choice', None)
+                    if user_choice and user_choice in ('language', 'project',):
+                        url = {
+                            'language': reverse('pootle-language-browse',
+                                                args=[language_code]),
+                            'project': reverse('pootle-project-browse',
+                                               args=[project_code, '', '']),
+                        }
+                        response = redirect(url[user_choice])
+                        response.delete_cookie('user-choice')
 
-                    return response
+                        return response
 
                 raise Http404
         elif language_code:

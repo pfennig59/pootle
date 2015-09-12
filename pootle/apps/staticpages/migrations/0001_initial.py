@@ -16,16 +16,6 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Agreement',
-            fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('agreed_on', models.DateTimeField(default=django.utils.timezone.now, auto_now=True, auto_now_add=True)),
-            ],
-            options={
-            },
-            bases=(models.Model,),
-        ),
-        migrations.CreateModel(
             name='LegalPage',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
@@ -34,7 +24,7 @@ class Migration(migrations.Migration):
                 ('title', models.CharField(max_length=100, verbose_name='Title')),
                 ('body', pootle.core.markup.fields.MarkupField(help_text='Allowed markup: HTML', verbose_name='Display Content', blank=True)),
                 ('url', models.URLField(help_text='If set, any references to this page will redirect to this URL', verbose_name='Redirect to URL', blank=True)),
-                ('modified_on', models.DateTimeField(default=django.utils.timezone.now, auto_now_add=True)),
+                ('modified_on', models.DateTimeField(default=django.utils.timezone.now, editable=False)),
             ],
             options={
                 'abstract': False,
@@ -50,24 +40,24 @@ class Migration(migrations.Migration):
                 ('title', models.CharField(max_length=100, verbose_name='Title')),
                 ('body', pootle.core.markup.fields.MarkupField(help_text='Allowed markup: HTML', verbose_name='Display Content', blank=True)),
                 ('url', models.URLField(help_text='If set, any references to this page will redirect to this URL', verbose_name='Redirect to URL', blank=True)),
-                ('modified_on', models.DateTimeField(default=django.utils.timezone.now, auto_now_add=True)),
+                ('modified_on', models.DateTimeField(default=django.utils.timezone.now, editable=False)),
             ],
             options={
                 'abstract': False,
             },
             bases=(pootle.core.mixins.dirtyfields.DirtyFieldsMixin, models.Model),
         ),
-        migrations.AddField(
-            model_name='agreement',
-            name='document',
-            field=models.ForeignKey(to='staticpages.LegalPage'),
-            preserve_default=True,
-        ),
-        migrations.AddField(
-            model_name='agreement',
-            name='user',
-            field=models.ForeignKey(to=settings.AUTH_USER_MODEL),
-            preserve_default=True,
+        migrations.CreateModel(
+            name='Agreement',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('agreed_on', models.DateTimeField(default=django.utils.timezone.now, editable=False)),
+                ('document', models.ForeignKey(to='staticpages.LegalPage')),
+                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
         ),
         migrations.AlterUniqueTogether(
             name='agreement',

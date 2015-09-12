@@ -15,21 +15,22 @@ in.
 Customizing Settings
 --------------------
 
-When starting Pootle with the ``pootle`` runner script, by default it will try
-to load custom settings from the *~/.pootle/pootle.conf* file. These settings
-will override the defaults set by Pootle.
+When starting Pootle with the :command:`pootle` runner script, by default it
+will try to load custom settings from the :file:`~/.pootle/pootle.conf` file.
+These settings will override the defaults set by Pootle.
 
 An alternative location for the settings file can be specified by setting the
 ``-c </path/to/settings.conf/>`` flag when executing the runner. You can also
-set the ``POOTLE_SETTINGS`` environment variable to specify the path to the
-custom configuration file. The environment variable will take precedence over
-the command-line flag.
+set the :envvar:`POOTLE_SETTINGS` environment variable to specify the path to
+the custom configuration file. The environment variable will take precedence
+over the command-line flag.
 
 If instead of an installation you deployed Pootle straight from the git
-repository, you can either set the ``POOTLE_SETTINGS`` environment variable or
-put a file under the *pootle/settings/* directory. Note that the files in this
-directory are read in alphabetical order, and  **creating a 90-local.conf file
-is recommended** (files ending in *-local.conf* will be ignored by git).
+repository, you can either set the :envvar:`POOTLE_SETTINGS` environment
+variable or put a file under the :file:`pootle/settings/` directory. Note that
+the files in this directory are read in alphabetical order, and **creating a
+90-local.conf file is recommended** (files ending in *-local.conf* will be
+ignored by git).
 
 
 .. _settings#available:
@@ -70,12 +71,19 @@ This file contains base configuration settings.
 Backend and caching settings.
 
 
-.. setting:: OBJECT_CACHE_TIMEOUT
+.. setting:: POOTLE_CACHE_TIMEOUT
 
-``OBJECT_CACHE_TIMEOUT``
-  Default: ``2500000``
+``POOTLE_CACHE_TIMEOUT``
+  Default: ``604800`` (a week)
 
-  Time in seconds the Pootle's statistics cache will last.
+  .. versionadded:: 2.7
+
+  Time in seconds to keep certain objects cached in memory (template fragments,
+  language and project lists, permissions, etc.).
+
+  Note that for anonymous users Pootle also uses :ref:`Django's caching
+  middleware <django:the-per-site-cache>`, and its settings can be configured
+  separately.
 
 
 25-logging.conf
@@ -143,39 +151,23 @@ Configuration settings for applications used by Pootle.
   administrators will still be able to create new user accounts.
 
 
-.. setting:: CUSTOM_TEMPLATE_CONTEXT
+.. setting:: POOTLE_CUSTOM_TEMPLATE_CONTEXT
 
-``CUSTOM_TEMPLATE_CONTEXT``
+``POOTLE_CUSTOM_TEMPLATE_CONTEXT``
   Default: ``{}``
+
+  .. versionchanged:: 2.7
 
   Custom template context dictionary. The values will be available in the
   templates as ``{{ custom.<key> }}``.
 
 
-.. setting:: FUZZY_MATCH_MAX_LENGTH
+.. setting:: POOTLE_LEGALPAGE_NOCHECK_PREFIXES
 
-``FUZZY_MATCH_MAX_LENGTH``
-  Default: ``70``
+``POOTLE_LEGALPAGE_NOCHECK_PREFIXES``
+  Default: ``('/about', '/accounts', '/admin', '/contact', '/jsi18n', '/pages', )``
 
-  Maximum character length to consider when doing fuzzy matching. The default
-  might not be enough for long texts. Please note this affects all fuzzy
-  matching operations, so bear in mind this might affect performance.
-
-
-.. setting:: FUZZY_MATCH_MIN_SIMILARITY
-
-``FUZZY_MATCH_MIN_SIMILARITY``
-  Default: ``75``
-
-  Minimum similarity to consider when doing fuzzy matching. Please note this
-  affects all fuzzy matching operations, so bear in mind this might affect
-  performance.
-
-
-.. setting:: LEGALPAGE_NOCHECK_PREFIXES
-
-``LEGALPAGE_NOCHECK_PREFIXES``
-  Default: ``('/accounts', '/admin', '/contact', '/jsi18n', '/pages', )``
+  .. versionchanged:: 2.7
 
   List of path prefixes where the ``LegalAgreementMiddleware`` will check
   if the current logged-in user has agreed all the legal documents defined
@@ -187,19 +179,12 @@ Configuration settings for applications used by Pootle.
 ``POOTLE_META_USERS``
   Default: ``()``
 
+  .. versionadded:: 2.7
+
   Additional meta, or non-human, accounts. Pootle already manages the 'system'
   and 'nobody' users who own system updates to translations and submissions by
   anonymous users.  These meta accounts have their own simple public profiles
   and won't track scores.
-
-
-.. setting:: MIN_AUTOTERMS
-
-``MIN_AUTOTERMS``
-  Default: ``60``
-
-  When building the terminology, the minimum number of terms that will be
-  automatically extracted.
 
 
 .. setting:: POOTLE_MARKUP_FILTER
@@ -228,15 +213,6 @@ Configuration settings for applications used by Pootle.
                             })
 
 
-.. setting:: MAX_AUTOTERMS
-
-``MAX_AUTOTERMS``
-  Default: ``600``
-
-  When building the terminology, the maximum number of terms that will be
-  automatically extracted.
-
-
 .. setting:: POOTLE_CAPTCHA_ENABLED
 
 ``POOTLE_CAPTCHA_ENABLED``
@@ -249,6 +225,8 @@ Configuration settings for applications used by Pootle.
 
 ``POOTLE_REPORTS_MARK_FUNC``
   Default: ``''`` (empty string)
+
+  .. versionadded:: 2.7
 
   The graph of a user's activity, within reports, can be `marked
   <https://code.google.com/p/flot-marks/>`_  to indicate events by using
@@ -289,23 +267,15 @@ Translation environment configuration settings.
   the trailing slash.
 
 
-.. setting:: EXPORTED_DIRECTORY_MODE
+.. setting:: POOTLE_SYNC_FILE_MODE
 
-``EXPORTED_DIRECTORY_MODE``
-  Default: ``0755``
-
-  On POSIX systems, exported directories will be assigned this permission. Use
-  ``0755`` for publically-readable directories or ``0700`` if you want only the
-  Pootle user to be able to read them.
-
-
-.. setting:: EXPORTED_FILE_MODE
-
-``EXPORTED_FILE_MODE``
+``POOTLE_SYNC_FILE_MODE``
   Default: ``0644``
 
-  On POSIX systems, exported files will be assigned this permission. Use
-  ``0644`` for publically-readable files or ``0600`` if you want only the
+  .. versionchanged:: 2.7
+
+  On POSIX systems, files synchronized to disk will be assigned this permission.
+  Use ``0644`` for publically-readable files or ``0600`` if you want only the
   Pootle user to be able to read them.
 
 
@@ -428,14 +398,11 @@ Deprecated Settings
 .. setting:: ENABLE_ALT_SRC
 
 ``ENABLE_ALT_SRC``
-  Default: ``True``
-
   .. deprecated:: 2.5
      Alternate source languages are now on by default. This ensures
      that translators have access to as much useful information as possible
      when translating.
 
-  Display alternate source languages in the translation interface.
 
 .. setting:: POOTLE_TOP_STATS_CACHE_TIMEOUT
 
@@ -444,8 +411,6 @@ Deprecated Settings
      The overview page statistics rewrite has removed these statistics and the
      RQ based statistics has also removed the load of this type of data so this
      setting has been removed.
-
-  Sets the timeout value for overview top statistics.
 
 
 .. setting:: VCS_DIRECTORY
@@ -472,3 +437,49 @@ Deprecated Settings
   .. deprecated:: 2.7
      The contributors page has been removed and is being replaced with better
      user statistics.
+
+
+.. setting:: MIN_AUTOTERMS
+
+``MIN_AUTOTERMS``
+  .. deprecated:: 2.7
+     Terminology auto-extraction feature has been removed.
+
+
+.. setting:: MAX_AUTOTERMS
+
+``MAX_AUTOTERMS``
+  .. deprecated:: 2.7
+     Terminology auto-extraction feature has been removed.
+
+
+.. setting:: DESCRIPTION
+
+``DESCRIPTION``
+  .. deprecated:: 2.7
+     Pootle no longer displays site description on the landing page, but rather
+     makes use of static pages to convey information to users in the sidebar.
+     Use :doc:`static pages </features/staticpages>` and :doc:`customization
+     </developers/customization>` if you want to give users information about
+     the Pootle site.
+
+
+.. setting:: FUZZY_MATCH_MAX_LENGTH
+
+``FUZZY_MATCH_MAX_LENGTH``
+  .. deprecated:: 2.7
+     Update against templates feature has been removed.
+
+
+.. setting:: FUZZY_MATCH_MIN_SIMILARITY
+
+``FUZZY_MATCH_MIN_SIMILARITY``
+  .. deprecated:: 2.7
+     Update against templates feature has been removed.
+
+
+.. setting:: EXPORTED_DIRECTORY_MODE
+
+``EXPORTED_DIRECTORY_MODE``
+  .. deprecated:: 2.7
+     Offline translation support was rewritten and the setting was unused.

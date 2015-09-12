@@ -7,6 +7,7 @@
 # or later license. See the LICENSE file for a copy of the license and the
 # AUTHORS file for copyright and authorship information.
 
+from django.db import OperationalError, ProgrammingError
 from django.core import checks
 from django.utils.translation import ugettext as _
 
@@ -15,7 +16,7 @@ from django.utils.translation import ugettext as _
 TTK_MINIMUM_REQUIRED_VERSION = (1, 13, 0)
 
 # Minimum Django version required for Pootle to run.
-DJANGO_MINIMUM_REQUIRED_VERSION = (1, 7, 8)
+DJANGO_MINIMUM_REQUIRED_VERSION = (1, 7, 10)
 
 # Minimum lxml version required for Pootle to run.
 LXML_MINIMUM_REQUIRED_VERSION = (2, 2, 2, 0)
@@ -42,6 +43,30 @@ def _version_to_string(version, significance=None):
     if significance is not None:
         version = version[significance:]
     return '.'.join(str(n) for n in version)
+
+
+@checks.register()
+def check_duplicate_emails(app_configs=None, **kwargs):
+    from accounts.utils import get_duplicate_emails
+    errors = []
+    try:
+        if len(get_duplicate_emails()):
+            errors.append(
+                checks.Warning(
+                    _("There are user accounts with duplicate emails. This "
+                      "will not be allowed in Pootle 2.8."),
+                    hint=_("Try using 'pootle find_duplicate_emails', and "
+                           "then update user emails with 'pootle "
+                           "update_user_email username email'. You might also "
+                           "want to consider using pootle merge_user or "
+                           "purge_user commands"),
+                    id="pootle.W017"
+                )
+            )
+    except (OperationalError, ProgrammingError):
+        # no accounts set up - most likely in a test
+        pass
+    return errors
 
 
 @checks.register()
@@ -78,23 +103,6 @@ def check_library_versions(app_configs=None, **kwargs):
 
 
 @checks.register()
-def check_optional_dependencies(app_configs=None, **kwargs):
-    errors = []
-
-    try:
-        import Levenshtein
-    except ImportError:
-        errors.append(checks.Warning(
-            _("Can't find python-levenshtein package. "
-              "Updating against templates is faster with python-levenshtein."),
-            hint=_("Try pip install python-levenshtein"),
-            id="pootle.W010",
-        ))
-
-    return errors
-
-
-@checks.register()
 def check_redis(app_configs=None, **kwargs):
     from django_rq.queues import get_queue
     from django_rq.workers import Worker
@@ -111,6 +119,17 @@ def check_redis(app_configs=None, **kwargs):
             id="pootle.C001",
         ))
     else:
+        redis_version = tuple(int(x) for x
+                              in (queue.connection
+                                       .info()["redis_version"].split(".")))
+        if redis_version < REDIS_MINIMUM_REQUIRED_VERSION:
+            errors.append(checks.Critical(
+                _("Your version of Redis is too old."),
+                hint=_("Update your system's Redis server package to at least "
+                       "version %s" % str(REDIS_MINIMUM_REQUIRED_VERSION)),
+                id="pootle.C007",
+            ))
+
         if len(queue.connection.smembers(Worker.redis_workers_keys)) == 0:
             # We need to check we're not running manage.py rqworker right now..
             import sys
@@ -120,14 +139,6 @@ def check_redis(app_configs=None, **kwargs):
                     hint=_("Run new workers with manage.py rqworker"),
                     id="pootle.W001",
                 ))
-
-        redis_version = queue.connection.info()["redis_version"].split(".")
-        if tuple(int(x) for x in redis_version) < REDIS_MINIMUM_REQUIRED_VERSION:
-            errors.append(checks.Warning(
-                _("Your version of Redis is too old."),
-                hint=_("Update your system's Redis server package"),
-                id="pootle.W002",
-            ))
 
     return errors
 
@@ -197,7 +208,7 @@ def check_settings(app_configs=None, **kwargs):
 
     if not settings.DEFAULT_FROM_EMAIL:
         errors.append(checks.Warning(
-            _("settings.DEFAULT_FROM_EMAIL is not set."),
+            _("DEFAULT_FROM_EMAIL is not set."),
             hint=_("DEFAULT_FROM_EMAIL is used in all outgoing Pootle email.\n"
                    "Don't forget to review your mail server settings."),
             id="pootle.W009",
@@ -206,11 +217,90 @@ def check_settings(app_configs=None, **kwargs):
     if settings.DEFAULT_FROM_EMAIL in ("info@YOUR_DOMAIN.com",
                                        "webmaster@localhost"):
         errors.append(checks.Warning(
-            _("settings.DEFAULT_FROM_EMAIL is using the following default "
+            _("DEFAULT_FROM_EMAIL is using the following default "
               "setting %r." % settings.DEFAULT_FROM_EMAIL),
             hint=_("DEFAULT_FROM_EMAIL is used in all outgoing Pootle email.\n"
                    "Don't forget to review your mail server settings."),
             id="pootle.W010",
         ))
 
+    try:
+        markup_filter, markup_kwargs = settings.POOTLE_MARKUP_FILTER
+    except AttributeError:
+        errors.append(checks.Warning(
+            _("POOTLE_MARKUP_FILTER is missing."),
+            hint=_("Set POOTLE_MARKUP_FILTER."),
+            id="pootle.W012",
+        ))
+    except (IndexError, TypeError, ValueError):
+        errors.append(checks.Warning(
+            _("Invalid value in POOTLE_MARKUP_FILTER."),
+            hint=_("Set a valid value for POOTLE_MARKUP_FILTER."),
+            id="pootle.W013",
+        ))
+    else:
+        if markup_filter is not None:
+            try:
+                if markup_filter == 'textile':
+                    import textile
+                elif markup_filter == 'markdown':
+                    import markdown
+                elif markup_filter == 'restructuredtext':
+                    import docutils
+                else:
+                    errors.append(checks.Warning(
+                        _("Invalid markup in POOTLE_MARKUP_FILTER."),
+                        hint=_("Set a valid markup for POOTLE_MARKUP_FILTER."),
+                        id="pootle.W014",
+                    ))
+            except ImportError:
+                errors.append(checks.Warning(
+                    _("POOTLE_MARKUP_FILTER is set to '%s' markup, but the "
+                      "package that provides can't be found." % markup_filter),
+                    hint=_("Install the package or change "
+                           "POOTLE_MARKUP_FILTER."),
+                    id="pootle.W015",
+                ))
+
+    return errors
+
+
+@checks.register()
+def check_users(app_configs=None, **kwargs):
+    from django.contrib.auth import get_user_model
+    from django.db import ProgrammingError
+    from django.db.utils import OperationalError
+
+    errors = []
+
+    User = get_user_model()
+    try:
+        admin_user = User.objects.get(username='admin')
+    except (User.DoesNotExist, OperationalError, ProgrammingError):
+        pass
+    else:
+        if admin_user.check_password('admin'):
+            errors.append(checks.Warning(
+                _("The default 'admin' user still has a password set to "
+                  "'admin'."),
+                hint=_("Remove the 'admin' user or change its password."),
+                id="pootle.W016",
+            ))
+
+    return errors
+
+
+@checks.register()
+def check_db_transaction_on_commit(app_configs=None, **kwargs):
+    from django.db import connection
+    errors = []
+    try:
+        on_commit = connection.on_commit
+    except AttributeError:
+        errors.append(checks.Critical(
+            _("Database connection does not implement on_commit."),
+            hint=_("Set the DATABASES['default']['ENGINE'] to use a backend "
+                   "from transaction_hooks.backends."),
+            id="pootle.C006",
+        ))
     return errors

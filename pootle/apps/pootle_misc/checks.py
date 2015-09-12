@@ -21,14 +21,21 @@ from django.utils.translation import ugettext_lazy as _
 from .util import import_func
 
 
-category_ids = {
+CATEGORY_IDS = {
     'critical': Category.CRITICAL,
     'cosmetic': Category.COSMETIC,
     'functional': Category.FUNCTIONAL,
     'extraction': Category.EXTRACTION,
     'other': Category.NO_CATEGORY,
 }
-
+CATEGORY_CODES = {v: k for k, v in CATEGORY_IDS.iteritems()}
+CATEGORY_NAMES = {
+    Category.CRITICAL: _("Critical"),
+    Category.COSMETIC: _("Cosmetic"),
+    Category.FUNCTIONAL: _("Functional"),
+    Category.EXTRACTION: _("Extraction"),
+    Category.NO_CATEGORY: _("Other"),
+}
 
 check_names = {
     'accelerators': _(u"Accelerators"),  # fixme duplicated
@@ -37,6 +44,7 @@ check_names = {
     'brackets': _(u"Brackets"),
     'compendiumconflicts': _(u"Compendium conflict"),
     'credits': _(u"Translator credits"),
+    'dialogsizes': _(u"Dialog sizes"),
     'doublequoting': _(u"Double quotes"),  # fixme duplicated
     'doublespacing': _(u"Double spaces"),
     'doublewords': _(u"Repeated word"),
@@ -47,6 +55,7 @@ check_names = {
     'filepaths': _(u"File paths"),
     'functions': _(u"Functions"),
     'gconf': _(u"GConf values"),
+    'isfuzzy': _(u"Fuzzy"),
     'kdecomments': _(u"Old KDE comment"),
     'long': _(u"Long"),
     'musttranslatewords': _(u"Must translate words"),
@@ -74,7 +83,7 @@ check_names = {
     'urls': _(u"URLs"),
     'validchars': _(u"Valid characters"),
     'variables': _(u"Placeholders"),
-    'validxml': _(u"Invalid XML"),
+    'validxml': _(u"Valid XML"),
     'xmltags': _(u"XML tags"),
     # Evernote checks
     'broken_entities': _(u"Broken HTML Entities"),
@@ -108,7 +117,7 @@ check_names = {
     'percent_brace_placeholders': _(u"Percent brace placeholders"),
 }
 
-excluded_filters = ['hassuggestion', 'spellcheck']
+excluded_filters = ['hassuggestion', 'spellcheck', 'isfuzzy', 'isreview', 'untranslated']
 
 # pre-compile all regexps
 
@@ -157,15 +166,17 @@ mustache_placeholder_pairs_regex = re.compile(u"(%s)" % fmt, re.U)
 fmt = u"\{{2}[\/]?[^\}]+\}{2}"
 mustache_like_placeholder_pairs_regex = re.compile(u"(%s)" % fmt, re.U)
 
-date_format_regex_0 = re.compile(u"^([GyMwWDdFEaHkKhmsSzZ]+[^\w]*)+$", re.U)
-date_format_regex_1 = re.compile(u"^(Day|Days|May|SMS|M|S|W|F|add|ads)$", re.I|re.U)
-date_format_regex_2 = re.compile(u"^(h:mm a|h:mm aa|hh:mm a|hh:mm aa)$", re.U)
-date_format_regex_3 = re.compile(u"^(H:mm|HH:mm)$", re.U)
-date_format_regex_4 = re.compile(u"^EEEE, MMMM d yyyy, (h:mm a|h:mm aa|hh:mm a|hh:mm aa)$", re.U)
-date_format_regex_5 = re.compile(u"^(EEEE, MMMM d yyyy|EEEE, d MMMM yyyy), (H:mm|HH:mm)$", re.U)
-date_format_regex_6 = re.compile(u"^MMMM yyyy$", re.U)
-date_format_regex_7 = re.compile(u"^yyyy'年'MMMM$", re.U)
-date_format_regex_8 = re.compile(u"[^\w]+", re.U)
+# date_format
+df_blocks = u"|".join(map(lambda x: '%s+' % x, 'GyYMwWDdFEuaHkKhmsSzZX')) + u"|\'[\w]+\'"
+df_glued_blocks = u"X+|Z+|\'[\w]*\'"
+df_delimiter = u"[^\w']+|\'[\w]*\'"
+df_regex_str = u"^(%(blocks)s)(%(glued_blocks)s)?((%(delimiter)s)+(%(blocks)s))*$" % {
+    'blocks': df_blocks,
+    'glued_blocks': df_glued_blocks,
+    'delimiter': df_delimiter,
+}
+date_format_regex = re.compile(df_regex_str, re.U)
+date_format_exception_regex = re.compile(u"^(M|S|W|F)$", re.I|re.U)
 
 fmt = u"^\s+|\s+$"
 whitespace_regex = re.compile(u"(%s)" % fmt, re.U)
@@ -231,6 +242,18 @@ def get_checker(unit):
         return import_func(settings.POOTLE_QUALITY_CHECKER)()
 
     return unit.store.translation_project.checker
+
+
+def get_category_id(code):
+    return CATEGORY_IDS.get(code)
+
+
+def get_category_code(cid):
+    return CATEGORY_CODES.get(cid)
+
+
+def get_category_name(code):
+    return unicode(CATEGORY_NAMES.get(code))
 
 
 class SkipCheck(Exception):
@@ -397,30 +420,16 @@ class ENChecker(checks.TranslationChecker):
     @critical
     def date_format(self, str1, str2):
         def get_fingerprint(str, is_source=False, translation=''):
+            is_date_format = bool(date_format_regex.match(str))
             if is_source:
-                if not date_format_regex_0.match(str):
+                if not is_date_format:
                     raise SkipCheck()
 
                 # filter out specific English strings which are not dates
-                if date_format_regex_1.match(str):
+                if date_format_exception_regex.match(str):
                     raise SkipCheck()
 
-                # filter out specific translation pairs
-                if date_format_regex_2.match(str):
-                    if date_format_regex_3.match(translation):
-                        raise SkipCheck()
-
-                if date_format_regex_4.match(str):
-                    if date_format_regex_5.match(translation):
-                        raise SkipCheck()
-
-                if date_format_regex_6.match(str):
-                    if date_format_regex_7.match(translation):
-                        raise SkipCheck()
-
-            fingerprint = u"\001".join(sorted(date_format_regex_8.split(str)))
-
-            return fingerprint
+            return is_date_format
 
         if check_translation(get_fingerprint, str1, str2):
             return True
@@ -915,7 +924,7 @@ class ENChecker(checks.TranslationChecker):
         raise checks.FilterFailure(u"Double quotes in tags mismatch")
 
 
-def run_given_filters(checker, unit, check_names=[]):
+def run_given_filters(checker, unit, check_names=None):
     """Run all the tests in this suite.
 
     :rtype: Dictionary
@@ -926,6 +935,9 @@ def run_given_filters(checker, unit, check_names=[]):
     Do some optimisation by caching some data of the unit for the
     benefit of :meth:`~TranslationChecker.run_test`.
     """
+    if check_names is None:
+        check_names = []
+
     checker.str1 = data.normalized_unicode(unit.source) or u""
     checker.str2 = data.normalized_unicode(unit.target) or u""
     checker.hasplural = unit.hasplural()
@@ -999,22 +1011,17 @@ def get_qualitychecks():
 
 
 def get_qualitycheck_schema(path_obj=None):
+    # TODO: add tests
+
     d = {}
     checks = get_qualitychecks()
-
-    category_names = {
-        Category.CRITICAL: _("Critical"),
-        Category.COSMETIC: _("Cosmetic"),
-        Category.FUNCTIONAL: _("Functional"),
-        Category.EXTRACTION: _("Extraction"),
-        Category.NO_CATEGORY: _("Other"),
-    }
 
     for check, cat in checks.items():
         if cat not in d:
             d[cat] = {
                 'code': cat,
-                'title': u"%s" % category_names[cat],
+                'name': get_category_code(cat),
+                'title': get_category_name(cat),
                 'checks': []
             }
         d[cat]['checks'].append({
@@ -1028,11 +1035,6 @@ def get_qualitycheck_schema(path_obj=None):
                     reverse=True)
 
     return result
-
-
-def get_qualitychecks_by_category(category):
-    checks = get_qualitychecks()
-    return filter(lambda x: checks[x] == category, checks)
 
 
 def _generic_check(str1, str2, regex, message):

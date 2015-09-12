@@ -11,13 +11,15 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.urlresolvers import reverse
 from django.db import models
-from django.template.defaultfilters import escape, truncatechars
+from django.db.models import F
+from django.template.defaultfilters import truncatechars
 from django.utils.functional import cached_property
-from django.utils.safestring import mark_safe
+from django.utils.html import format_html
 from django.utils.translation import ugettext_lazy as _
 
 from pootle.core.log import log, SCORE_CHANGED
 from pootle.core.utils import dateformat
+from pootle.core.utils.json import jsonify
 from pootle_misc.checks import check_names
 from pootle_store.fields import to_python
 from pootle_store.util import FUZZY, TRANSLATED, UNTRANSLATED
@@ -49,6 +51,9 @@ class SubmissionTypes(object):
     # types that are stored in the DB
     EDIT_TYPES = [NORMAL, SYSTEM]
     CONTRIBUTION_TYPES = [NORMAL, SYSTEM, SUGG_ADD]
+    SUGGESTION_TYPES = [SUGG_ACCEPT, SUGG_ADD, SUGG_REJECT]
+    REVIEW_TYPES = [SUGG_ACCEPT, SUGG_REJECT]
+    EDITING_TYPES = [NORMAL, SYSTEM, UNIT_CREATE, UPLOAD]
 
 
 #: Values for the 'field' field of Submission
@@ -59,6 +64,8 @@ class SubmissionFields(object):
     STATE = 3  # pootle_store.models.Unit.state
     COMMENT = 4  # pootle_store.models.Unit.translator_comment
 
+    TRANSLATION_FIELDS = [TARGET]
+
     NAMES_MAP = {
         NONE: "",
         SOURCE: _("Source"),
@@ -66,6 +73,15 @@ class SubmissionFields(object):
         STATE: _("State"),
         COMMENT: _("Comment"),
     }
+
+
+class TranslationActionTypes(object):
+    TRANSLATED = 0
+    EDITED = 1
+    PRE_TRANSLATED = 2
+    REMOVED = 3
+    REVIEWED = 4
+    NEEDS_WORK = 5
 
 
 class SubmissionManager(models.Manager):
@@ -78,6 +94,53 @@ class SubmissionManager(models.Manager):
                 'quality_check', 'store',
             )
         )
+
+    def get_unit_comments(self):
+        """Submissions that change a `Unit`'s comment.
+
+        :return: Queryset of `Submissions`s that change a `Unit`'s comment.
+        """
+        return self.get_queryset().filter(field=SubmissionFields.COMMENT)
+
+    def get_unit_creates(self):
+        """`Submission`s that create a `Unit`.
+
+        :return: Queryset of `Submissions`s that create a `Unit`'s.
+        """
+        return (self.get_queryset()
+                    .filter(type=SubmissionTypes.UNIT_CREATE))
+
+    def get_unit_edits(self):
+        """`Submission`s that change a `Unit`'s `target`.
+
+        :return: Queryset of `Submissions`s that change a `Unit`'s target.
+        """
+        return (self.get_queryset()
+                    .exclude(new_value__isnull=True)
+                    .filter(field__in=SubmissionFields.TRANSLATION_FIELDS)
+                    .filter(type__in=SubmissionTypes.EDITING_TYPES))
+
+    def get_unit_state_changes(self):
+        """Submissions that change a unit's STATE.
+
+        :return: Queryset of `Submissions`s change a `Unit`'s `STATE`
+            - ie FUZZY/TRANSLATED/UNTRANSLATED.
+        """
+        return (self.get_queryset()
+                    .filter(field=SubmissionFields.STATE))
+
+    def get_unit_suggestion_reviews(self):
+        """Submissions that review (reject/accept) `Unit` suggestions.
+
+        :return: Queryset of `Submissions`s that `REJECT`/`ACCEPT`
+            `Suggestion`s.
+        """
+        # reject_suggestion does not set field so we must exclude STATE reviews
+        # and it seems there are submissions that use STATE and are in
+        # REVIEW_TYPES
+        return (self.get_queryset()
+                    .exclude(field=SubmissionFields.STATE)
+                    .filter(type__in=SubmissionTypes.REVIEW_TYPES))
 
 
 class Submission(models.Model):
@@ -142,39 +205,31 @@ class Submission(models.Model):
 
         return True
 
+    def as_json(self):
+        """Returns a json describing the submission."""
+        return jsonify(self.get_submission_info())
 
-    def as_html(self):
-        return self.get_submission_message()
+    def get_submission_info(self):
+        """Returns a dictionary describing the submission.
 
-    def get_submission_message(self):
-        """Returns a message describing the submission.
-
-        The message includes the user (with link to profile and gravatar), a
-        message describing the action performed, and when it was performed.
+        The dict includes the user (with link to profile and gravatar),
+        a type and translation_action_type describing the action performed,
+        and when it was performed.
         """
-        unit = {}
-        source = {}
+        result = {}
 
         if self.unit is not None:
-            unit = {
-                'source': escape(truncatechars(self.unit, 50)),
-                'url': self.unit.get_translate_url(),
-            }
-            source = {
-                'source_string': '<i><a href="%(url)s">%(source)s</a></i>' %
-                    unit,
-            }
+            result.update({
+                'unit_source': truncatechars(self.unit, 50),
+                'unit_url': self.unit.get_translate_url(),
+            })
 
             if self.quality_check is not None:
                 check_name = self.quality_check.name
-                unit.update({
+                result.update({
                     'check_name': check_name,
-                    'check_display_name': check_names[check_name],
+                    'check_display_name': check_names.get(check_name, check_name),
                     'checks_url': reverse('pootle-checks-descriptions'),
-                })
-                source.update({
-                    'check_name': '<a href="%(checks_url)s#%(check_name)s">'
-                                  '%(check_display_name)s</a>' % unit,
                 })
 
         if (self.suggestion and
@@ -190,55 +245,22 @@ class Submission(models.Model):
                 User = get_user_model()
                 displayuser = User.objects.get_nobody_user()
 
-        displayname = displayuser.display_name
-
-        action_bundle = {
+        result.update({
             "profile_url": displayuser.get_absolute_url(),
-            "gravatar_url": displayuser.gravatar_url(20),
-            "displayname": displayname,
+            "email": displayuser.email_hash,
+            "displayname": displayuser.display_name,
             "username": displayuser.username,
             "display_datetime": dateformat.format(self.creation_time),
             "iso_datetime": self.creation_time.isoformat(),
-            "action": "",
-        }
+            "type": self.type,
+            "mtime": int(dateformat.format(self.creation_time, 'U')),
+        })
 
-        msg = {
-            SubmissionTypes.REVERT: _(
-                'reverted translation for %(source_string)s',
-                source
-            ),
-            SubmissionTypes.SUGG_ACCEPT: _(
-                'accepted suggestion for %(source_string)s',
-                source
-            ),
-            SubmissionTypes.SUGG_ADD: _(
-                'added suggestion for %(source_string)s',
-                source
-            ),
-            SubmissionTypes.SUGG_REJECT: _(
-                'rejected suggestion for %(source_string)s',
-                source
-            ),
-            SubmissionTypes.UPLOAD: _(
-                'uploaded a file'
-            ),
-            SubmissionTypes.MUTE_CHECK: _(
-                'muted %(check_name)s for %(source_string)s',
-                source
-            ),
-            SubmissionTypes.UNMUTE_CHECK: _(
-                'unmmuted %(check_name)s for %(source_string)s',
-                source
-            ),
-        }.get(self.type, None)
+        #TODO Fix bug 3011 and remove the following code related
+        # to TranslationActionTypes.
 
-        #TODO Look how to detect submissions for "sent suggestion", "rejected
-        # suggestion"...
-
-        #TODO Fix bug 3011 and replace the following code with the appropiate
-        # one in the dictionary above.
-
-        if msg is None:
+        if self.type in SubmissionTypes.EDIT_TYPES:
+            translation_action_type = None
             try:
                 if self.field == SubmissionFields.TARGET:
                     if self.new_value != '':
@@ -246,46 +268,56 @@ class Submission(models.Model):
                         # if this submission is not last unit state
                         # can be changed
                         if self.unit.state == TRANSLATED:
+
                             if self.old_value == '':
-                                msg = _('translated %(source_string)s', source)
+                                translation_action_type = \
+                                    TranslationActionTypes.TRANSLATED
                             else:
-                                msg = _('edited %(source_string)s', source)
+                                translation_action_type = \
+                                    TranslationActionTypes.EDITED
                         elif self.unit.state == FUZZY:
                             if self.old_value == '':
-                                msg = _('pre-translated %(source_string)s',
-                                        source)
+                                translation_action_type = \
+                                    TranslationActionTypes.PRE_TRANSLATED
                             else:
-                                msg = _('edited %(source_string)s', source)
+                                translation_action_type = \
+                                    TranslationActionTypes.EDITED
                     else:
-                        msg = _('removed translation for %(source_string)s',
-                                source)
+                        translation_action_type = TranslationActionTypes.REMOVED
                 elif self.field == SubmissionFields.STATE:
                     # Note that a submission where field is STATE
                     # should be created before a submission where
                     # field is TARGET
-                    msg = {
-                        TRANSLATED: _('reviewed %(source_string)s', source),
-                        FUZZY: _('marked as fuzzy %(source_string)s', source)
-                    }.get(int(to_python(self.new_value)), '')
-                else:
-                    msg = _('unknown action %(source_string)s', source)
+
+                    translation_action_type = {
+                        TRANSLATED: TranslationActionTypes.REVIEWED,
+                        FUZZY: TranslationActionTypes.NEEDS_WORK
+                    }.get(int(to_python(self.new_value)), None)
+
             except AttributeError:
-                return ''
+                return result
 
-        action_bundle['action'] = msg
+            result['translation_action_type'] = translation_action_type
 
-        return mark_safe(
-            u'<div class="last-action">'
-            '  <a href="%(profile_url)s">'
-            '    <img src="%(gravatar_url)s" />'
-            '    <span title="%(username)s">%(displayname)s</span>'
-            '  </a>'
-            '  <span class="action-text">%(action)s</span>'
-            '  <time class="extra-item-meta js-relative-date"'
-            '    title="%(display_datetime)s" datetime="%(iso_datetime)s">&nbsp;'
-            '  </time>'
-            '</div>'
-            % action_bundle)
+        return result
+
+    def get_suggestion_description(self):
+        """Returns a suggestion-related descriptive message for the submission.
+
+        If there's no suggestion activity linked with the submission, `None` is
+        returned instead.
+        """
+        if self.type not in SubmissionTypes.SUGGESTION_TYPES:
+            return None
+
+        sugg_user = self.suggestion.user
+        author = format_html('<a href="{}">{}</a>', sugg_user.get_absolute_url(),
+                                                    sugg_user.display_name)
+        return {
+            SubmissionTypes.SUGG_ADD: _('Added suggestion'),
+            SubmissionTypes.SUGG_ACCEPT: _('Accepted suggestion from %s' % author),
+            SubmissionTypes.SUGG_REJECT: _('Rejected suggestion from %s' % author),
+        }.get(self.type, None)
 
     def save(self, *args, **kwargs):
         super(Submission, self).save(*args, **kwargs)
@@ -439,8 +471,10 @@ class ScoreLog(models.Model):
 
         super(ScoreLog, self).save(*args, **kwargs)
 
-        self.user.score += self.score_delta
-        self.user.save()
+        User = get_user_model()
+        User.objects.filter(id=self.user.id).update(
+            score=F('score') + self.score_delta
+        )
         self.log()
 
     def log(self):
@@ -557,8 +591,17 @@ class ScoreLog(models.Model):
     def is_similarity_taken_from_mt(self):
         return self.submission.similarity < self.submission.mt_similarity
 
-    def get_paid_words(self):
-        """Returns the translated and reviewed words in the current action."""
+    def get_suggested_wordcount(self):
+        """Returns the suggested wordcount in the current action."""
+        if self.action_code == TranslationActionCodes.SUGG_ADDED:
+            return self.wordcount
+
+        return None
+
+    def get_paid_wordcounts(self):
+        """Returns the translated and reviewed wordcount in the current
+        action.
+        """
         ns = self.wordcount
         s = self.get_similarity()
         translated_words = ns * (1 - s)

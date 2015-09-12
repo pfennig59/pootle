@@ -1,8 +1,8 @@
 =====================================
-Welcome to the new Pootle 2.7.0 alpha
+Welcome to the new Pootle 2.7.0 final
 =====================================
 
-*Not yet released*
+*Released on 4 August 2015*
 
 This is the first release of Pootle that combines the work of Evernote and
 Translate.
@@ -11,9 +11,9 @@ Changes in Requirements
 =======================
 - Django >= 1.7, < 1.8
 - `Translate Toolkit <http://toolkit.translatehouse.org/download.html>`_ >=
-  1.12.0
+  1.13.0
 - Python >= 2.7, < 3.0
-- Redis - latest stable release.
+- Redis >= 2.8
 - Unix-based operating system.
 
 
@@ -21,7 +21,10 @@ Major Changes
 =============
 
 - Switched license from GPLv2 to GPLv3.
-- Major UI revamp - overview pages are consistent across all views.  Navigation
+- The `Evernote Pootle fork <https://github.com/evernote/>`_ and Translate
+  Pootle are now merged into the same code base and are being actively
+  developed together.
+- Major UI revamp - browsing pages are consistent across all views.  Navigation
   is now much easier, more consistent and more powerful.  The editor is cleaner
   and works to prevent errors early.
 - Backgrounding statistics calculations - so Pootle and its users are never
@@ -42,16 +45,16 @@ Details of changes
 Major user interface revamp
 ---------------------------
 
-Overview
+Browsing
 ~~~~~~~~
 
-- Pootle overview pages now has a single column and wide stats table that shows
+- Pootle browsing pages now have a single column and wide stats table that shows
   the same data in the different views. This create a consistent look while
   browsing through languages and projects.
 - No home page. Users are redirected to their preferred language pages
   instead, falling back to the project listings page.
 - Critical errors and pending suggestions are prominently displayed on the
-  overview page and not hidden.
+  browsing page and not hidden.
 - New navigation scheme:
 
   + All directories/files for a project are displayed in a new drop-down.
@@ -59,13 +62,13 @@ Overview
     in a project.
   + Tabs have been replaced in favor of drop-down menus.
   + The editor search box is now displayed in the action links section, keeping
-    its positioning consistent with the overview page.
-  + A new action link in the editor, *Go back to overview*, allows users to go
+    its positioning consistent with the browsing page.
+  + A new action link in the editor, *Go back to browsing*, allows users to go
     back to the same place they entered translation mode from.
 
-- When there are failing checks, overview tables now display the number of
+- When there are failing checks, browsing tables now display the number of
   units which have failing checks, not the total number of failing checks.
-- Table sorting is now remembered across overview pages, and not separately in
+- Table sorting is now remembered across browsing pages, and not separately in
   project, language and translation project pages.
 - User actionable items in the navbar have been moved to a drop-down.
 - When selecting languages, redirect logic is now smarter.
@@ -74,6 +77,8 @@ Overview
 - Implemented project specific announcements in a sidebar.  These make use of
   static pages. Notifications are per-project and are displayed across
   languages (automatically adapting any hyperlinks).
+- Announcements for language and translation project have been also
+  implemented.
 - Major speed improvements when calculating last action information.
 
 
@@ -82,9 +87,9 @@ Editor
 
 - New features:
 
-  - Added screenshot prefix URL for projects, which allow integrating
-    screenshots for units. The images are retrieved from public Evernote
-    notebooks.
+  - Added context search URL prefix for projects, which allow integrating
+    screenshots for units. This is the ability to provide a search URL (link to
+    a search engine) where to look up the text of the current unit in.
   - Translation similarities are calculated in the client and sent to the
     server to calculate the user's score. The score changes are logged over
     time. Along with this, the best matches are highlighted in the editor.
@@ -93,7 +98,7 @@ Editor
 
   - The editor now displays the numbering for units, not pages.
   - When going through all units in the translation editor, users will be
-    automatically redirected back to overview.
+    automatically redirected back to browsing.
   - If the currently-submitted unit has failing checks then the editor won't
     advance to the next unit and it will be updated displaying the unresolved
     checks. The same behavior applies when a suggestion is accepted.
@@ -105,7 +110,9 @@ Editor
   - Quality checks are always displayed and can be individually muted/unmuted.
   - When a users mutes or unmutes a quality check, the action will be recorded
     in the unit's timeline.
-  - Quality checks. A custom set of quality checks has been incorporated.
+  - A custom set of new quality checks has been incorporated. It is still
+    possible to instead use the old quality checks.
+  - It is possible filter the strings using the checks categories.
 
 - Usability improvements and other fixes:
 
@@ -148,6 +155,8 @@ Miscellaneous
   made online while you you translated offline.  If changes were made while
   offline then the upload will be rejected.  In such case download a the file
   again, use your offline tools or TM to retranslate and try another upload.
+- Added the initial implementation of virtual folders. This feature is meant to
+  replace the now gone goals.
 
 
 Statistics calculations
@@ -163,7 +172,7 @@ Statistics calculations
 - A new counter ``pootle.core.utils.wordcount.wordcount`` has been incorporated
   (it omits placeholders and words that shouldn't be translated). Non-empty
   units with 0 words are immediately translated and marked as fuzzy.
-- Overview pages now report the last time a unit was added to a store/project.
+- Browsing pages now report the last time a unit was added to a store/project.
   In the browsing tables a *Last Updated* column is displayed and in the
   extended stats *Created* and *Last Updated* dates.
 - Statistics are also available for the *All Projects* view.
@@ -187,8 +196,13 @@ Sysadmins
 
 - Direct upgrade is now only possible from 2.6.0.  Thus to upgrade from older
   releases first upgrade to 2.6.0
+- The ability to deploy using Fabric has been dropped. We advise to use the
+  recommended upgrade and install instructions in the documentation.
 - Redis is now required for all caching, memcached and other alternatives will
   not work.
+- Exports no longer work if they are directly served by the web server. Apache
+  users can refer to :ref:`Apache and mod_wsgi <apache#mod_wsgi>` for a
+  suggested configuration.
 - Registration and authentication is now handled by `django-allauth
   <https://readthedocs.org/projects/django-allauth/>`_.  gives Pootle
   implicit support for OpenID, OAuth, OAuth2 and Persona sign-in
@@ -210,7 +224,7 @@ Sysadmins
   quality check handler.
 - Xapian and Lucene are no longer required for searching and Pootle will not
   make use of them.  You can safely remove supporting libraries and packages if
-  these services where used only for Pootle.
+  these services were used only for Pootle.
 - :setting:`POOTLE_REPORTS_MARK_FUNC` allows a site wide function to provide
   marks to user graphs.
 - Pootle no longer runs on Windows.  Pootle uses RQ which makes use of
@@ -223,14 +237,16 @@ Sysadmins
 Command changes and additions
 -----------------------------
 
+- Improved the way :djadmin:`update_stores` inserts and deletes units in the
+  store (:issue:`3802`).
 - In :djadmin:`update_stores` if a directory doesn't exist while running the
   command, the project will be disabled. Thus the
   ``update_translation_projects`` command has been removed, it's functionality
   has been merged into :djadmin:`update_stores` with this change.
 - Added the :djadmin:`changed_languages` management command.
-- Individual quality checks can now be recalculated via the ``--check`` flag
-  passed to the :djadmin:`refresh_stats` management command.
-- Added ``--calculate-checks`` parameter to the :djadmin:`refresh_stats`
+- Individual quality checks can now be recalculated via the :option:`--check`
+  flag passed to the :djadmin:`refresh_stats` management command.
+- Added :option:`--calculate-checks` parameter to the :djadmin:`refresh_stats`
   command.
 - :djadmin:`refresh_stats_rq` was added to allow statistics to be refresh when
   running with multiple RQ workers.
@@ -238,10 +254,10 @@ Command changes and additions
   commands.
 - Added command and store action logging.
 - Added :djadmin:`test_checks` management command.
-- Removed ``--directory`` and ``--path-prefix`` parameters from management
-  commands. ``--project`` and ``--language`` should be used instead to
-  reduce the scope of commands.
-- Removed the ``--modified-since`` flag. Optimizations will automatically
+- Removed :option:`--directory` and :option:`--path-prefix` parameters from
+  management commands. :option:`--project` and :option:`--language` should be
+  used instead to reduce the scope of commands.
+- Removed the :option:`--modified-since` flag. Optimizations will automatically
   be done based on the latest sync revision.
 - New management commands: :djadmin:`revision`, :djadmin:`refresh_scores`,
   :djadmin:`retry_failed_jobs`, :djadmin:`import`, :djadmin:`export`,
@@ -263,27 +279,40 @@ Deprecated settings
   - ``MARKUP_FILTER`` -> :setting:`POOTLE_MARKUP_FILTER`
   - ``USE_CAPTCHA`` -> :setting:`POOTLE_CAPTCHA_ENABLED`
   - ``MT_BACKENDS`` -> :setting:`POOTLE_MT_BACKENDS`
+  - ``POOTLE_CONTACT_REPORT_EMAIL`` -> :setting:`POOTLE_REPORT_STRING_ERRORS_EMAIL`
+  - ``EXPORTED_FILE_MODE`` -> :setting:`POOTLE_SYNC_FILE_MODE`
+  - ``OBJECT_CACHE_TIMEOUT`` -> :setting:`POOTLE_CACHE_TIMEOUT`
+  - ``LEGALPAGE_NOCHECK_PREFIXES`` -> :setting:`POOTLE_LEGALPAGE_NOCHECK_PREFIXES`
+  - ``CUSTOM_TEMPLATE_CONTEXT`` -> :setting:`POOTLE_CUSTOM_TEMPLATE_CONTEXT`
 
 - :setting:`POOTLE_TOP_STATS_CACHE_TIMEOUT` has been removed with the old top
-  stats rendering and is replaced by the new overview UI.
-- :setting:`VCS_DIRECTORY` is now deprecated as the intgrated Version Control
+  stats rendering and is replaced by the new browsing UI.
+- :setting:`VCS_DIRECTORY` is now deprecated as the integrated Version Control
   feature has been removed to come back at a later date.
 - :setting:`CONTRIBUTORS_EXCLUDED_PROJECT_NAMES` and
   :setting:`CONTRIBUTORS_EXCLUDED_NAMES` have been removed along with the
   contributors' page.
+- :setting:`DESCRIPTION` has been removed, use :doc:`static pages
+  </features/staticpages>` instead.
+- ``ENABLE_ALT_SRC`` has been removed
+- ``MIN_AUTOTERMS`` has been removed
+- ``MAX_AUTOTERMS`` has been removed
+- ``FUZZY_MATCH_MAX_LENGTH`` has been removed
+- ``FUZZY_MATCH_MIN_SIMILARITY`` has been removed
+- ``EXPORTED_DIRECTORY_MODE`` has been removed
 
 
 Internal changes
 ----------------
 
 - Switched to a custom user model. This merges the data and functionality
-  available in `auth.User` and `PootleProfile` before, and has allowed to
+  available in ``auth.User`` and ``PootleProfile`` before, and has allowed to
   remove the dependency on deprecated third party apps that were bundled in the
   code.
-- The multiple Suggestion models have been merged into a single model.
+- The multiple ``Suggestion`` models have been merged into a single model.
 - Changed the way units needing to be sync'ed to disk is determined. Units now
   have a unique revision number within the store they belong to and they'll be
-  synchronized based on the `last_sync_revision` field of the store.
+  synchronized based on the ``last_sync_revision`` field of the store.
 - Tests have been resurrected.
 - Upgraded jQuery to 2.x and applied a bunch of fixes to the Tipsy plugin,
   avoiding ad-hoc hacks to remove dangling tips.
@@ -305,9 +334,6 @@ Infrastructure
 --------------
 - All bugs have moved from Bugzilla to `Github issues
   <https://github.com/translate/pootle/issues>`_.
-- The `Evernote Pootle fork <https://github.com/evernote/>`_ and Translate
-  Pootle are now merged into the same code base and being actively developed
-  together.
 
 
 .. _270-removed-features:
@@ -324,7 +350,7 @@ There are two groups of features that have been dropped:
 Recoverable features
 --------------------
 
-The following features are removed from Pootle since 2.5.1.1 and will be
+The following features are removed from Pootle since 2.5.1.3 and will be
 recovered at some time.  Where possible we provide alternate approaches that
 can be used.
 
@@ -332,8 +358,6 @@ can be used.
    prevents use of Pootle within their environment.  Essentially you will need
    to evaluate the use and need for each missing feature.
 
-Major fatures
-~~~~~~~~~~~~~
 
 - Extension actions.
 - Tags and Goals.
@@ -344,22 +368,16 @@ Major fatures
   bilingual files outside of Pootle.
 - Support for Version Control Systems - automate your version control
   integration outside of Pootle.
-- News, notifications and RSS feeds - make use of announcement pages use other
-  channels of communication.
+- News, notifications and RSS feeds - make use of announcement pages or use
+  other channels of communication.
 - Update against templates - do template updates outside of Pootle and use
   :djadmin:`update_stores` to load the changed files.
 - Public API.
-
-Minor features
-~~~~~~~~~~~~~~
-
 - The Wikipedia lookup backend
 - No *Top Contributors* tables - user scores likely provide the information you
   are looking for.
 - Project/Language/Translation Project descriptions - these are migrated to
-  announcement static pages.
-- Management commands: update_translation_projects, updatedb, upgrade, setup
-- ``assign_permissions`` management command
+  announcements.
 
 
 Legacy features
@@ -370,9 +388,8 @@ easy upgrades in the past:
 
 .. note:: The removal of some of these feature required extensive changes to
    the upgrading code, which means that upgrading directly from very old Pootle
-   versions is no longer possible. In case you are trying to upgrade from
-   Pootle 2.1.0 or older you must first upgrade to 2.1.6 before continuing the
-   upgrade process.
+   versions is no longer possible. In case you are trying to upgrade you must
+   first upgrade to 2.6 before continuing the upgrade process.
 
 - .pending and .tm files support: Not necessary since the ``updatetm`` tool was
   removed in Pootle 2.5.0.
@@ -383,11 +400,15 @@ easy upgrades in the past:
   its low popularity and high maintenance cost.
 - Removed the zoom feature. Users should use their browsers zooming features.
 - Hooks.
+- Automatic terminology extraction. It's encouraged to use an external tool to
+  generate any glossaries, then load them up on Pootle.
+- Management commands: ``update_translation_projects``, ``updatedb``,
+  ``upgrade``, ``setup``, ``assign_permissions``.
 
 
-...and lots of refactoring, upgrades of upstream code, cleanups to remove
-Django 1.4 specifics, improved documentation and of course, loads of bugs were
-fixed.
+...and lots of refactoring, upgrades of upstream code, cleanups to remove old
+Django versions specifics, improved documentation and of course, loads of bugs
+were fixed.
 
 
 
@@ -396,6 +417,9 @@ Credits
 
 This release was made possible by the following people:
 
-%CONTRIBUTORS%
+Julen Ruiz Aizpuru, Taras Semenenko, Dwayne Bailey, Leandro Regueiro, Igor
+Afanasyev, Jerome Leclanche, Khaled Hosny, pfennig59, Zahim Anass,
+Trejkaz (pen name), safaalfulaij, Peter Bengtsson, msaad, Mikhail Paulyshka,
+Miha Vrhovnik, Kevin Scannell, Edmund Huber, Dídac Rios, Andras Timar.
 
 And to all our bug finders, testers and translators, a Very BIG Thank You.

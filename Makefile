@@ -2,14 +2,11 @@ CWD = $(shell pwd)
 SRC_DIR = ${CWD}/pootle
 DOCS_DIR = ${CWD}/docs
 STATIC_DIR = ${SRC_DIR}/static
-ASSETS_DIR = ${SRC_DIR}/assets
+ASSETS_DIR = $(shell python -c "from pootle.settings import *; print(STATIC_ROOT)")
 JS_DIR = ${STATIC_DIR}/js
 CSS_DIR = ${STATIC_DIR}/css
 IMAGES_DIR = ${STATIC_DIR}/images
 SPRITE_DIR = ${IMAGES_DIR}/sprite
-VERSION=$(shell python setup.py --version)
-FULLNAME=$(shell python setup.py --fullname)
-SFUSERNAME=$(shell egrep -A5 sourceforge ~/.ssh/config | egrep -m1 User | cut -d" " -f2)
 FORMATS=--formats=bztar
 TEST_ENV_NAME = pootle_test_env
 
@@ -28,7 +25,7 @@ assets:
 	mkdir -p ${ASSETS_DIR}
 	python manage.py collectstatic --noinput --clear -i node_modules -i *.jsx ${TAIL}
 	python manage.py assets build ${TAIL}
-	chmod 664 ${ASSETS_DIR}/.webassets-cache/*
+	chmod 664 ${ASSETS_DIR}.webassets-cache/*
 
 docs:
 	# Make sure that the submodule with docs theme is pulled and up-to-date.
@@ -55,6 +52,17 @@ test: clean assets
 pot:
 	@${SRC_DIR}/tools/createpootlepot
 
+get-translations:
+	ssh pootle.locamotion.org ". /var/www/sites/pootle/env/bin/activate; python /var/www/sites/pootle/src/manage.py sync_stores --verbosity=3 --project=pootle"
+	rsync -az --delete --exclude="LINGUAS" --exclude=".translation_index" --exclude=pootle-terminology.po pootle.locamotion.org:/var/www/sites/pootle/translations/pootle/ ${SRC_DIR}/locale
+
+put-translations:
+	rsync -azv --progress --exclude="*~" --exclude="*.mo" --exclude="LC_MESSAGES" --exclude=unicode --exclude="LINGUAS" --exclude=".translation_index" --exclude=pootle-terminology.po ${SRC_DIR}/locale/ pootle.locamotion.org:/var/www/sites/pootle/translations/pootle/
+	@echo "Perform manual update_stores"
+
+linguas:
+	@${SRC_DIR}/tools/make-LINGUAS.sh 80 > ${SRC_DIR}/locale/LINGUAS
+
 mo:
 	python setup.py build_mo ${TAIL}
 
@@ -66,17 +74,6 @@ pep8:
 
 publish-pypi:
 	python setup.py sdist ${FORMATS} upload
-
-test-publish-pypi:
-	 python setup.py sdist ${FORMATS} upload -r https://testpypi.python.org/pypi
-
-#scp -p dist/translate-toolkit-1.10.0.tar.bz2 jsmith@frs.sourceforge.net:/home/frs/project/translate/Translate\ Toolkit/1.10.0/
-publish-sourceforge:
-	@echo "We don't trust automation that much.  The following is the command you need to run"
-	@echo 'scp -p dist/${FULLNAME}.tar.bz2 ${SFUSERNAME}@frs.sourceforge.net:"/home/frs/project/translate/Pootle/${VERSION}/"'
-	@echo 'scp -p docs/releases/${VERSION}.rst ${SFUSERNAME}@frs.sourceforge.net:"/home/frs/project/translate/Pootle/${VERSION}/README.rst"'
-
-publish: publish-pypi publish-sourceforge
 
 help:
 	@echo "Help"
@@ -91,9 +88,8 @@ help:
 	@echo "  test - run test suite"
 	@echo "  pep8 - run pep8 checks"
 	@echo "  pot - update the POT translations templates"
+	@echo "  get-translations - retrieve Pootle translations from server (requires ssh config for pootletranslations)"
+	@echo "  linguas - update the LINGUAS file with languages over 80% complete"
 	@echo "  mo - build MO files for languages listed in 'pootle/locale/LINGUAS'"
 	@echo "  mo-all - build MO files for all languages (only use for testing)"
 	@echo "  publish-pypi - publish on PyPI"
-	@echo "  test-publish-pypi - publish on PyPI testing platform"
-	@echo "  publish-sourceforge - publish on sourceforge"
-	@echo "  publish - publish on PyPI and sourceforge"

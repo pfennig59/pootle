@@ -16,7 +16,15 @@ import datetime
 import os
 import subprocess
 
-from django.utils.lru_cache import lru_cache
+try:
+    from django.utils.lru_cache import lru_cache
+except ImportError:
+    # Required for Python 2.7 support and when backported Django version is
+    # unavailable
+    def lru_cache():
+        def fake(func):
+            return func
+        return fake
 
 
 CANDIDATE_MARKERS = ('alpha', 'beta', 'rc', 'final')
@@ -56,6 +64,8 @@ def get_version(version=None):
         git_changeset = get_git_changeset()
         if git_changeset:
             sub = '.dev%s' % git_changeset
+        else:
+            sub = '.dev0'
 
     elif candidate != 'final':
         mapping = {'alpha': 'a', 'beta': 'b', 'rc': 'rc'}
@@ -150,7 +160,6 @@ def get_docs_version(version=None, positions=2):
     '1.2'
     """
     version = get_complete_version(version)
-    candidate = _get_candidate(version)
     candidate_pos = _get_candidate_pos(version)
     if positions > candidate_pos:
         positions = candidate_pos
@@ -186,7 +195,7 @@ def get_git_changeset():
     '20150530132219'
     """
     timestamp = _shell_command(
-        ['git', 'log', '--pretty=format:%ct', '--quiet', '-1', 'HEAD']
+        ['/usr/bin/git', 'log', '--pretty=format:%ct', '--quiet', '-1', 'HEAD']
     )
     try:
         timestamp = datetime.datetime.utcfromtimestamp(int(timestamp))
@@ -202,7 +211,7 @@ def get_git_branch():
     >>> get_git_branch()
     'feature/proper_version'
     """
-    branch = _shell_command(['git', 'symbolic-ref', '-q', 'HEAD']).strip()
+    branch = _shell_command(['/usr/bin/git', 'symbolic-ref', '-q', 'HEAD']).strip()
     if not branch:
         return None
     return "/".join(branch.split("/")[2:])
@@ -216,7 +225,7 @@ def get_git_hash():
     'ad768e8'
     """
     return _shell_command(
-        ['git', 'rev-parse', '--verify', '--short', 'HEAD']
+        ['/usr/bin/git', 'rev-parse', '--verify', '--short', 'HEAD']
     ).strip()
 
 if __name__ == "__main__":

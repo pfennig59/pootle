@@ -359,7 +359,7 @@ td.stats-name a:hover,
 .browser-parent a:hover > i + span,
 td.stats-name a:hover > i + span,
 .sidebar-action a:hover > i + span,
-.last-action > a:hover > img + span
+.last-action > a:hover > .user-name
 {
     text-decoration: underline;
 }
@@ -434,8 +434,7 @@ td.stats-name a:hover > i + span,
  * STATIC PAGES
  */
 
-div.staticpage-on-sidebar,
-#staticpage
+.staticpage
 {
     margin: 2em auto;
     padding: 0 2em;
@@ -443,8 +442,7 @@ div.staticpage-on-sidebar,
     max-width: 960px;
 }
 
-div.staticpage-on-sidebar h1,
-#staticpage h1
+.staticpage h1
 {
     font-size: 2.2em;
     line-height: 85%;
@@ -452,36 +450,55 @@ div.staticpage-on-sidebar h1,
     margin-bottom: 1em;
 }
 
-div.staticpage-on-sidebar h2,
-#staticpage h2
+.staticpage h2
 {
     color: rgba(25, 15, 0, 0.5);
     font-size: 1.8em;
     margin: 1em 0 0.5em;
 }
 
-div.staticpage-on-sidebar h3,
-#staticpage h3
+.staticpage h3
 {
     margin: 1em 0 0.5em;
 }
 
-div.staticpage-on-sidebar p,
-#staticpage p
+.staticpage p
 {
     margin: 0.5em 0;
 }
 
-div.staticpage-on-sidebar ol,
-#staticpage ol
+.staticpage ol
 {
     margin-left: 2em;
 }
 
-div.staticpage-on-sidebar li,
-#staticpage li
+.staticpage li
 {
-    list-style: decimal;
+    list-style: inherit;
+}
+
+.staticpage .edit-link
+{
+    font-family: sans-serif;
+    font-size: 13px;
+    line-height: 1.3;
+    vertical-align: middle;
+}
+
+.staticpage .edit-link a
+{
+    text-decoration: none;
+    display: inline-block;
+    background: #c30;
+    color: #fff;
+    padding: 0 0.5em;
+
+    border-radius: 1em;
+}
+
+.staticpage .edit-link a:hover
+{
+    background: #000;
 }
 
 
@@ -489,13 +506,13 @@ div.staticpage-on-sidebar li,
  * CHECKS DESCRIPTIONS
  */
 
-#staticpage.checks-descriptions code,
-#staticpage.checks-descriptions tt
+.staticpage.checks-descriptions code,
+.staticpage.checks-descriptions tt
 {
     color: red;
 }
 
-#staticpage.checks-descriptions h3:target
+.staticpage.checks-descriptions h3:target
 {
     background-color: #ff9;
     outline: 5px solid #ff9;
@@ -589,8 +606,8 @@ html[dir="rtl"] #sidebar-toggle
     border-radius: 0 2px 2px 0;
 }
 
-div.staticpage-on-sidebar,
-div.sidebar-group
+.sidebar-group,
+.sidebar-group .staticpage
 {
     margin: 0;
     padding: 0;
@@ -598,8 +615,8 @@ div.sidebar-group
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-div.staticpage-on-sidebar:last-child,
-div.sidebar-group:last-child
+.sidebar-group:last-child,
+.sidebar-group .staticpage:last-child
 {
     padding: 0;
     border-bottom: none;
@@ -787,11 +804,6 @@ html[dir="rtl"] .hd h2
 {
     margin-left: 0;
     margin-right: 0.5em;
-}
-
-table.stats .last-updated .action-text
-{
-    display: none;
 }
 
 
@@ -1236,6 +1248,12 @@ html[dir="rtl"] td.stats-name,
 
 .checks a
 {
+    color: #444;
+}
+
+#check-critical a,
+.checks-critical a
+{
     color: #c00;
 }
 
@@ -1551,158 +1569,6 @@ html[dir="rtl"] ul.pager li:last-child > *
     padding-right: 3em !important;
 }
 
-
-/* Breadcrumbs */
-
-.breadcrumb
-{
-    font-size: 1.5em;
-    font-weight: normal;
-    font-family: 'Helvetica Neue', Helvetica, Helvetica, Arial, sans-serif;
-    visibility: hidden;
-    margin-left: -5px;
-    padding: 5px 0;
-    height: 2em;
-    display: table-cell;
-    vertical-align: middle;
-}
-
-.browser .breadcrumb
-{
-    padding: 5px 0 0 0;
-}
-
-/* By default (on small screens), place resource dropdown on the second line */
-#js-breadcrumb-resource
-{
-    display: block;
-}
-
-/* When browser window is wide enough, force breadcrumbs to be on the single line */
-@media screen and (min-width: 1350px)
-{
-    .breadcrumb
-    {
-        white-space: nowrap;
-        overflow: hidden;
-    }
-
-    #js-breadcrumb-resource
-    {
-        display: inline-block;
-    }
-}
-
-.breadcrumb li
-{
-    display: inline-block;
-    float: left;
-    margin-left: 0.3em;
-}
-
-.breadcrumb li.hide
-{
-    display: none;
-}
-
-.breadcrumb li::before
-{
-    content: " / ";
-}
-
-.breadcrumb li:first-child:before,
-.translate .breadcrumb li::before,
-.browser .breadcrumb li::before
-{
-    margin-left: 0;
-    content: normal;
-}
-
-/* select2 dropdown widgets in breadcrumbs */
-
-.breadcrumb .select2-container .select2-choice,
-.unit-sort .select2-container .select2-choice
-{
-    height: auto;
-    padding: 0 0 0 4px;
-}
-
-.breadcrumb .select2-container .select2-choice
-{
-    line-height: 44px;
-}
-
-.breadcrumb .navigation .select2-choice,
-.unit-sort .navigation .select2-choice
-{
-    color: #0489b7;
-}
-
-.breadcrumb .select2-container .select2-choice div
-{
-    top: 8px;
-}
-
-.breadcrumb .select2-container .select2-choice abbr
-{
-    top: 15px;
-    right: 22px;
-}
-
-/* HACK: display background as a thin line */
-.breadcrumb-dropdown .select2-result-unselectable
-{
-    height: 1px;
-    margin: 0.5em;
-}
-
-.breadcrumb-dropdown .select2-result-unselectable .select2-result-label
-{
-    cursor: default;
-}
-/* END HACK */
-
-.select2-results .folder
-{
-    font-weight: bold;
-}
-
-.select2-result-label .text
-{
-    margin-left: 0.3em;
-}
-
-.select2-result-label
-{
-    white-space: nowrap;
-}
-
-.select2-result-label .file
-{
-    margin-left: 1.5em;
-}
-
-.select2-resource-root .file
-{
-    margin-left: auto;
-}
-
-.select2-match
-{
-    color: #000;
-    background-color: rgba(255, 255, 0, 0.5);
-}
-
-.select2-results .select2-result.admin
-{
-    color: #c30;
-}
-
-.select2-results .select2-highlighted.admin
-{
-    background-color: #c30;
-    color: #fff;
-}
 
 /* Tabs */
 

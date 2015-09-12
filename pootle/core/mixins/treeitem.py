@@ -16,6 +16,7 @@ from functools import wraps
 
 from django.conf import settings
 from django.core.urlresolvers import set_script_prefix
+from django.db import connection
 from django.utils.encoding import force_unicode, iri_to_uri
 
 from django_rq.queues import get_queue, get_connection
@@ -87,9 +88,9 @@ class TreeItem(object):
     def set_children(self, children):
         self._children = children
 
-    def get_parent(self):
+    def get_parents(self):
         """This method will be overridden in descendants"""
-        return None
+        return []
 
     def get_cachekey(self):
         """This method will be overridden in descendants"""
@@ -113,7 +114,7 @@ class TreeItem(object):
     @classmethod
     def _get_last_action(self):
         """This method will be overridden in descendants"""
-        return {'id': 0, 'mtime': 0, 'snippet': ''}
+        return {'mtime': 0}
 
     @classmethod
     def _get_mtime(self):
@@ -123,7 +124,7 @@ class TreeItem(object):
     @classmethod
     def _get_last_updated(self):
         """This method will be overridden in descendants"""
-        return {'id': 0, 'creation_time': 0, 'snippet': ''}
+        return {'creation_time': 0}
 
     def is_dirty(self):
         """Checks if any of children is registered as dirty"""
@@ -413,8 +414,8 @@ class CachedTreeItem(TreeItem):
             log("%s deleted from %s cache" % (keys, itemkey))
 
         if parents:
-            p = self.get_parent()
-            if p is not None:
+            item_parents = self.get_parents()
+            for p in item_parents:
                 p._clear_cache(keys, parents=parents, children=False)
 
         if children:
@@ -470,8 +471,12 @@ class CachedTreeItem(TreeItem):
         r_con = get_connection()
         job = get_current_job()
         for p in self.all_pootle_paths():
-            logger.debug('UNREGISTER %s (-%s) where job_id=%s' %
-                         (p, decrement, job.id))
+            if job:
+                logger.debug('UNREGISTER %s (-%s) where job_id=%s' %
+                             (p, decrement, job.id))
+            else:
+                logger.debug('UNREGISTER %s (-%s)' %
+                             (p, decrement))
             r_con.zincrby(POOTLE_DIRTY_TREEITEMS, p, 0 - decrement)
 
     def unregister_dirty(self, decrement=1):
@@ -480,8 +485,12 @@ class CachedTreeItem(TreeItem):
         """
         r_con = get_connection()
         job = get_current_job()
-        logger.debug('UNREGISTER %s (-%s) where job_id=%s' %
-                     (self.get_cachekey(), decrement, job.id))
+        if job:
+            logger.debug('UNREGISTER %s (-%s) where job_id=%s' %
+                         (self.get_cachekey(), decrement, job.id))
+        else:
+            logger.debug('UNREGISTER %s (-%s)' %
+                         (self.get_cachekey(), decrement))
         r_con.zincrby(POOTLE_DIRTY_TREEITEMS, self.get_cachekey(), 0 - decrement)
 
     def get_dirty_score(self):
@@ -496,7 +505,7 @@ class CachedTreeItem(TreeItem):
         if _dirty:
             self._dirty_cache = set()
             self.register_all_dirty()
-            create_update_cache_job(self, _dirty)
+            create_update_cache_job_wrapper(self, _dirty)
 
     def update_all_cache(self):
         """Add a RQ job which updates all cached stats of current TreeItem
@@ -521,9 +530,8 @@ class CachedTreeItem(TreeItem):
                     keys_for_parent.remove(key)
 
             if keys_for_parent:
-                p = self.get_parent()
-                if p is not None:
-                    create_update_cache_job(p, keys_for_parent, decrement)
+                for p in self.get_parents():
+                    create_update_cache_job_wrapper(p, keys_for_parent, decrement)
                 self.unregister_dirty(decrement)
             else:
                 self.unregister_all_dirty(decrement)
@@ -537,10 +545,9 @@ class CachedTreeItem(TreeItem):
         to the default queue
         """
         all_cache_methods = set(CachedMethods.get_all())
-        p = self.get_parent()
-        if p is not None:
+        for p in self.get_parents():
             p.register_all_dirty()
-            create_update_cache_job(p, all_cache_methods)
+            create_update_cache_job_wrapper(p, all_cache_methods)
 
 
 class JobWrapper():
@@ -646,6 +653,7 @@ class JobWrapper():
         if job.timeout is None:
             job.timeout = self.timeout
         job.save(pipeline=pipe)
+        self.job = job
 
     def save_deferred(self, depends_on, pipe):
         """
@@ -676,16 +684,26 @@ def update_cache_job(instance):
     job_wrapper.clear_job_params()
 
 
-def create_update_cache_job(instance, keys, decrement=1):
+def create_update_cache_job_wrapper(instance, keys, decrement=1):
     queue = get_queue('default')
+    if queue._async:
+
+        def _create_update_cache_job():
+            create_update_cache_job(queue, instance, keys, decrement=decrement)
+        connection.on_commit(_create_update_cache_job)
+    else:
+        instance._update_cache_job(keys, decrement=decrement)
+
+
+def create_update_cache_job(queue, instance, keys, decrement=1):
     queue.connection.sadd(queue.redis_queues_keys, queue.key)
     job_wrapper = JobWrapper.create(update_cache_job,
-                                               instance=instance,
-                                               keys=keys,
-                                               decrement=decrement,
-                                               connection=queue.connection,
-                                               origin=queue.name,
-                                               timeout=queue.DEFAULT_TIMEOUT)
+                                    instance=instance,
+                                    keys=keys,
+                                    decrement=decrement,
+                                    connection=queue.connection,
+                                    origin=queue.name,
+                                    timeout=queue.DEFAULT_TIMEOUT)
     last_job_key = instance.get_last_job_key()
 
     with queue.connection.pipeline() as pipe:
@@ -743,4 +761,5 @@ def create_update_cache_job(instance, keys, decrement=1):
                 logger.debug('RETRY after WatchError for %s' % last_job_key)
                 continue
     logger.debug('ENQUEUE %s (job_id=%s)' % (last_job_key, job_wrapper.id))
+
     queue.push_job_id(job_wrapper.id)

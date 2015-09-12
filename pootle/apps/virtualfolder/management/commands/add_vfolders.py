@@ -39,6 +39,15 @@ class Command(BaseCommand):
             raise CommandError("Please check if the JSON file is malformed. "
                                "Original error:\n%s" % e)
 
+        for vfolder_item in vfolders:
+            try:
+                temp = ','.join(vfolder_item['filters']['files'])
+                if not temp:
+                    raise ValueError
+            except (KeyError, ValueError):
+                raise CommandError("Virtual folder '%s' has no filtering "
+                                   "rules." % vfolder_item['name'])
+
         self.stdout.write("Importing virtual folders...")
 
         added_count = 0
@@ -50,10 +59,7 @@ class Command(BaseCommand):
 
             # Put all the files for each virtual folder as a list and save it
             # as its filter rules.
-            try:
-                vfolder_item['filter_rules'] = ','.join(vfolder_item['filters']['files'])
-            except KeyError:
-                vfolder_item['filter_rules'] = ''
+            vfolder_item['filter_rules'] = ','.join(vfolder_item['filters']['files'])
 
             if 'filters' in vfolder_item:
                 del vfolder_item['filters']
@@ -98,12 +104,12 @@ class Command(BaseCommand):
                                   "changed to %f.", vfolder.name,
                                   vfolder.priority)
 
-                if ('is_browsable' in vfolder_item and
-                    vfolder.is_browsable != vfolder_item['is_browsable']):
+                if ('is_public' in vfolder_item and
+                    vfolder.is_public != vfolder_item['is_public']):
 
-                    vfolder.is_browsable = vfolder_item['is_browsable']
+                    vfolder.is_public = vfolder_item['is_public']
                     changed = True
-                    logging.debug("is_browsable status for virtual folder "
+                    logging.debug("is_public status for virtual folder "
                                   "'%s' will be changed.", vfolder.name)
 
                 if ('description' in vfolder_item and

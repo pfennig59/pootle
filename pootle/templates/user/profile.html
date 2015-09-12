@@ -18,6 +18,9 @@
         {{ object.display_name }}
       {% endif %}
     </h1>
+    {% if user.is_superuser or request.permissions.administrate %}
+    <p><a href="mailto:{{ object.email }}">{{ object.email }}</a></p>
+    {% endif %}
   </div>
 
 {% if not object.is_meta %}
@@ -55,7 +58,7 @@
     {% if last_event %}
     <div class="user-last-activity">
       <div class="label">{% trans 'Latest activity:' %}</div>
-      {{ last_event.get_submission_message }}
+      <div class="last-action js-last-action"></div>
     </div>
     {% endif %}
     {% endwith %}
@@ -106,18 +109,18 @@
 
 {% block scripts_extra %}
 {{ block.super }}
-{% if user == object %}
 {% assets 'js_user_app' %}
 <script type="text/javascript" src="{{ ASSET_URL }}"></script>
 {% endassets %}
-{% endif %}
 <script type="text/javascript">
 $(function() {
-  {% if user == object %}
-  PTL.user.init({el: '.js-user-profile-edit',
-                 userData: {{ user.as_json|safe }},
-                 appRoot: '{{ user.get_absolute_url }}'});
-  {% endif %}
+  PTL.user.init({
+    {% if user == object %}
+    userData: {{ user.as_json|safe }},
+    appRoot: '{{ user.get_absolute_url }}',
+    {% endif %}
+    lastEvent: {{ object.last_event.as_json|safe }}
+  });
 });
 </script>
 {% endblock %}

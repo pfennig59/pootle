@@ -28,16 +28,24 @@ CACHES = {
     # check in place that will abort everything otherwise
     'redis': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/1',
+        'LOCATION': 'redis://127.0.0.1:6379/15',
         'TIMEOUT': None,
     },
     'stats': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/1',
+        'LOCATION': 'redis://127.0.0.1:6379/15',
         'TIMEOUT': None,
     },
 }
 
+# Using synchronous mode for testing
+RQ_QUEUES = {
+    'default': {
+        'USE_REDIS_CACHE': 'redis',
+        'DEFAULT_TIMEOUT': 360,
+        'ASYNC': False,
+    },
+}
 
 # Mail server settings
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
@@ -52,13 +60,5 @@ PASSWORD_HASHERS = (
 SILENCED_SYSTEM_CHECKS = [
     'pootle.C005',  # Silence the RedisCache check as we use a dummy cache
     'pootle.W005',  # DEBUG = True
-    'pootle.W010',  # python-levenshtein not installed
     'pootle.W011',  # POOTLE_CONTACT_EMAIL has default setting
 ]
-
-
-# No need for actual context processors
-TEMPLATE_CONTEXT_PROCESSORS = (
-    # FIXME: this should go away; see django-allauth#949
-    'allauth.socialaccount.context_processors.socialaccount',
-)

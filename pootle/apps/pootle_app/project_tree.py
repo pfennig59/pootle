@@ -135,19 +135,20 @@ def split_files_and_dirs(ignored_files, ext, real_dir, file_filter):
     return files, dirs
 
 
-def add_items(fs_items, db_items, create_or_resurrect_db_item, parent):
+def add_items(fs_items_set, db_items, create_or_resurrect_db_item, parent):
     """Add/make obsolete the database items to correspond to the filesystem.
 
-    :param fs_items: entries currently in the filesystem
-    :param db_items: entries currently in the database
+    :param fs_items_set: items (dirs, files) currently in the filesystem
+    :param db_items: dict (name, item) of items (dirs, stores) currently in the
+        database
     :create_or_resurrect_db_item: callable that will create a new db item
         or resurrect an obsolete db item with a given name and parent.
+    :parent: parent db directory for the items
     :return: list of all items, list of newly added items
     :rtype: tuple
     """
     items = []
     new_items = []
-    fs_items_set = set(fs_items)
     db_items_set = set(db_items)
 
     items_to_delete = db_items_set - fs_items_set
@@ -157,6 +158,8 @@ def add_items(fs_items, db_items, create_or_resurrect_db_item, parent):
         db_items[name].makeobsolete()
     if len(items_to_delete) > 0:
         parent.update_all_cache()
+        for vfolder_treeitem in parent.vfolder_treeitems:
+            vfolder_treeitem.update_all_cache()
 
     for name in db_items_set - items_to_delete:
         items.append(db_items[name])
@@ -308,6 +311,26 @@ def translation_project_should_exist(language, project):
             pass
 
     return False
+
+
+def init_store_from_template(translation_project, template_store):
+    """Initialize a new file for `translation_project` using `template_store`.
+    """
+    if translation_project.file_style == 'gnu':
+        target_pootle_path, target_path = get_translated_name_gnu(translation_project,
+                                                                  template_store)
+    else:
+        target_pootle_path, target_path = get_translated_name(translation_project,
+                                                              template_store)
+
+    # Create the missing directories for the new TP.
+    target_dir = os.path.dirname(target_path)
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
+
+    output_file = template_store.file.store
+    output_file.settargetlanguage(translation_project.language.code)
+    output_file.savefile(target_path)
 
 
 def get_translated_name_gnu(translation_project, store):

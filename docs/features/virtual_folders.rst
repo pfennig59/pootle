@@ -21,7 +21,7 @@ Virtual folders have several attributes:
 - A mandatory lowercase name,
 - A mandatory location,
 - An optional priority,
-- An optional browsability flag,
+- An optional publicness flag,
 - An optional description,
 - A field accepting several optional filtering rules.
 
@@ -41,8 +41,8 @@ The priority defaults to ``1`` and accepts any value greater than ``0``,
 including numbers with decimals, like ``0.75``. Higher numbers means higher
 priority.
 
-By default virtual folders can be browsed. If they are not browsable then they
-won't be displayed, but they are still used for sorting.
+By default virtual folders are public. If they are not public then they won't
+be displayed, but they are still used for sorting.
 
 Also the virtual folders can have a description which might be useful to
 explain the contents of the folder or provide additional instructions. This
@@ -51,8 +51,7 @@ might be handy when using the virtual folders as goals.
 The filtering rules specify which translation units are included within a
 virtual folder. Currently the only supported filtering rule consists of a list
 of file or directory paths relative to the virtual folder location. Note
-that it is required to set some filtering rule, otherwise no units will be
-selected at all.
+that it is required to set some filtering rule.
 
 
 .. _virtual_folders#apply:
@@ -69,6 +68,24 @@ the specs for the :ref:`JSON format <virtual_folders#json-format>` in order to
 know how to craft a JSON file that fits your needs.
 
 
+.. _virtual_folders#stats:
+
+Calculating virtual folders stats
+---------------------------------
+
+To calculate the translation stats of virtual folders use the
+:djadmin:`refresh_stats` management command. Virtual folder stats will be
+calculated along regular directories and files stats.
+
+.. warning:: Note that the :djadmin:`refresh_stats` management command will not
+    trigger virtual folder stats calculation.
+
+After the initial calculation no extra runs will be required unless virtual
+folders are changed by a run of the :djadmin:`add_vfolders` management command.
+Changes introduced due to translation through the editor will automatically
+update the stats without intervention.
+
+
 .. _virtual_folders#translate:
 
 Translating virtual folders
@@ -78,7 +95,7 @@ If a virtual folder applies in the current location, then clicking on the links
 on the overview page will provide the units in priority order when translating
 in the editor. The priority sorting on the translation editor is calculated
 taking into account all the applicable virtual folders in the current location,
-including the not browsable ones.
+including the not public ones.
 
 
 .. _virtual_folders#json-format:

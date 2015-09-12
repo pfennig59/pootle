@@ -69,6 +69,18 @@ def spanish(english):
 
 
 @pytest.fixture
+def italian(english):
+    """Require the Spanish language."""
+    return _require_language('it', 'Italian')
+
+
+@pytest.fixture
+def russian(english):
+    """Require the Russian language."""
+    return _require_language('ru', 'Russian')
+
+
+@pytest.fixture
 def fish(english):
     """Require the Fish language ><(((º>"""
     return _require_language(code='fish', fullname='Fish')

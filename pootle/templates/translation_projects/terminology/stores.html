@@ -4,11 +4,11 @@
 {% block content %}
 {% if stores %}
 <div class="settings-container centered" lang="{{ LANGUAGE_CODE }}">
-    <p>{% trans "Here you can manage the terms in the terminology files." %}</p>
+  <p>{% trans "Here you can manage the terms in the terminology files." %}</p>
 </div>
 
-<table class="sortable stats" id="stats" cellpadding="5"
-    cellspacing="0" width="100%" lang="{{ LANGUAGE_CODE }}" dir="{% locale_dir %}">
+<table class="sortable stats" id="stats"
+    lang="{{ LANGUAGE_CODE }}" dir="{% locale_dir %}">
   <thead>
     <tr>
       <th>{% trans "File" %}</th>
@@ -18,7 +18,7 @@
   {% for store in stores %}
   <tr class="item">
     <td>
-      <a href="{{ store.pootle_path}}/terminology_manage.html">{{ store.nice_name}}</a>
+      <a href="{{ store.pootle_path }}/terminology/">{{ store.nice_name }}</a>
     </td>
     </tr>
   {% endfor %}

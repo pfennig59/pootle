@@ -8,7 +8,6 @@
 
 'use strict';
 
-var $ = require('jquery');
 var _ = require('underscore');
 var Backbone = require('backbone');
 
@@ -30,13 +29,11 @@ var MessageList = Backbone.Collection.extend({
 var MessageView = Backbone.View.extend({
   className: 'alert alert-block',
 
-  template: _.template('<%= text %>'),
-
   render: function () {
     this.$el.addClass(['alert', this.model.get('level')].join('-'));
     this.$el.attr('lang', this.model.get('language'));
 
-    this.$el.html(this.template(this.model.toJSON())).hide().fadeIn(300);
+    this.$el.html(this.model.get('text')).hide().fadeIn(300);
 
     return this;
   },
